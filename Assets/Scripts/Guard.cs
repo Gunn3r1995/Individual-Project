@@ -1,30 +1,31 @@
 ﻿using Assets.Scripts;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Guard : MonoBehaviour {
-    //public static event System.Action OnGuardPatrolling;
-    //public static event System.Action OnGuardAlerted;
-    public static event System.Action OnGuardHasSpottedPlayer;
-    //public static event System.Action OnGuardSearchingForPlayer;
-    //public static event System.Action OnGuardApprehendingPlayer;
+    public static event System.Action OnGuardApprehendingPlayer;
 
-    public enum States { patrolling, alerted, spottedPlayer, searchingForPlayer, ApprehendingPlayer}
-    States state = States.patrolling;
+    public enum States { Patrolling, Alerted, SearchingForPlayer, ApprehendingPlayer }
+    States state = States.Patrolling;
 
     public float walkSpeed = 2;
-    public float runSpeed = 6;
+    public float runSpeed = 5;
     public float waitTime = 0.3f;
     public float turnSpeed = 90f;
+
+    public float reactionTime = 1.0f;
+
     public float timeToSpotPlayer = 0.5f;
     public float speedSmoothTime = 0.1f;
 
     public Light spotlight;
     public float viewDistance = 10f;
     public LayerMask viewMask;
-    //public GameObject alert;
+    public GameObject alert;
+
+    public float wanderTimer = 10.0f;
+    public float wanderRadius = 10.0f;
 
     float viewAngle;
     float playerVisibleTimer;
@@ -35,48 +36,51 @@ public class Guard : MonoBehaviour {
     Color originalSpotlightColour;
 
     bool followPathCoroutineRunning;
+    bool moveToPositionCoroutineRunning;
+    bool searchingForPlayerCoroutineRunning;
+    bool apprehendingPlayerCouroutineRunning;
+
     int targetWaypointIndex;
 
-    void Start ()
+    void Start()
     {
         GetAllComponents();
 
         //Spotlight view angle and colour
-        viewAngle = spotlight.spotAngle;
-        originalSpotlightColour = spotlight.color;
+        //viewAngle = spotlight.spotAngle;
+        //originalSpotlightColour = spotlight.color;
 
-        GuardPatrolling();
+        //state = States.Patrolling;
+        //GuardPatrolling();
     }
 
     void Update()
     {
-        SpotPlayer();
-
+        //SpotPlayer();
+        /*
         switch (state)
         {
-            case States.patrolling:
+            case States.Patrolling:
                 GuardPatrolling();
                 break;
-            case States.alerted:
+            case States.Alerted:
                 GuardAlerted();
                 break;
-            case States.spottedPlayer:
-                GuardHasSpottedPlayer();
-                break;
-            case States.searchingForPlayer:
+            case States.SearchingForPlayer:
+                GuardSearchingForPlayer();
                 break;
             case States.ApprehendingPlayer:
+                GuardApprehendingPlayer();
                 break;
-        };
-    }
+        };*/
 
-    #region util
+
+    }
 
     void GetAllComponents()
     {
-        animator = GetComponent<Animator>();
-        player = GameObject.FindObjectOfType<PlayerController>().transform;
-        //player = GameObject.FindGameObjectWithTag("Player").transform;
+        //animator = GetComponent<Animator>();
+        player = GameObject.FindGameObjectWithTag("Player").transform;
     }
 
     Vector3[] GenerateWaypointPositions()
@@ -107,10 +111,6 @@ public class Guard : MonoBehaviour {
         Gizmos.DrawRay(transform.position, transform.forward * viewDistance);
     }
 
-    #endregion
-
-    #region Movement
-
     IEnumerator FollowPath(Vector3[] waypoints)
     {
         print("FollowPath: starting patrolling coroutine");
@@ -119,7 +119,7 @@ public class Guard : MonoBehaviour {
         Vector3 targetWaypoint = waypoints[targetWaypointIndex];
         transform.LookAt(targetWaypoint);
 
-        while(state == States.patrolling)
+        while (state == States.Patrolling)
         {
             transform.position = Vector3.MoveTowards(transform.position, targetWaypoint, walkSpeed * Time.deltaTime);
             animator.SetFloat("speedPercent", 0.5f, speedSmoothTime, Time.deltaTime);
@@ -130,22 +130,116 @@ public class Guard : MonoBehaviour {
                 targetWaypointIndex = (targetWaypointIndex + 1) % waypoints.Length;
                 targetWaypoint = waypoints[targetWaypointIndex];
 
-                //Wait for X seconds
-                animator.SetFloat("speedPercent", 0);
-                yield return new WaitForSeconds(waitTime);
-
-                //Move to new target
-                animator.SetFloat("speedPercent", 0.5f);
+                yield return StartCoroutine(Wait(waitTime));
                 yield return StartCoroutine(TurnToFace(targetWaypoint));
+                animator.SetFloat("speedPercent", 0.5f);
             }
             yield return null;
         }
         followPathCoroutineRunning = false;
     }
 
+    IEnumerator MoveToPlayersLastKnownPosition(Vector3 targetPosition)
+    {
+        print("MoveToPostition: starting move to position coroutine");
+        moveToPositionCoroutineRunning = true;
+
+        //Change Colour of Alert
+        AlertSetActive(true);
+
+        yield return StartCoroutine(Wait(reactionTime));
+        yield return StartCoroutine(TurnToFace(targetPosition));
+
+        while (state == States.Alerted)
+        {
+            transform.position = Vector3.MoveTowards(transform.position, targetPosition, runSpeed * Time.deltaTime);
+            animator.SetFloat("speedPercent", 1.0f, speedSmoothTime, Time.deltaTime);
+
+            if (CanSeePlayer())
+            {
+                state = States.ApprehendingPlayer;
+            } else if (transform.position == targetPosition)
+            {
+                animator.SetFloat("speedPercent", 0f);
+                state = States.SearchingForPlayer;
+            }
+            yield return null;
+        }
+
+        moveToPositionCoroutineRunning = false;
+    }
+
+    IEnumerator SearchForPlayer()
+    {
+        searchingForPlayerCoroutineRunning = true;
+           
+        //Random direction
+        //Random distance
+        //Go to waypoint and look around.
+        float timer = 0f;
+
+        Vector3 targetPosition = RandomNavSphere(transform.position, wanderRadius);
+        targetPosition.y = 0;
+
+        while (state == States.SearchingForPlayer)
+        {
+            timer += Time.deltaTime;
+            if (timer <= wanderTimer)
+            {
+                transform.position = Vector3.MoveTowards(transform.position, targetPosition, walkSpeed * Time.deltaTime);
+
+                if(transform.position == targetPosition)
+                {
+                    targetPosition = RandomNavSphere(transform.position, wanderRadius);
+                    targetPosition.y = 0;
+                }
+            } else
+            {
+                print("Times up!!, Im bored");
+                state = States.Patrolling;
+            }
+            yield return null;
+        }
+        searchingForPlayerCoroutineRunning = false;
+    }
+
+    public Vector3 RandomNavSphere(Vector3 origin, float dist)
+    {
+        Vector3 randDirection = UnityEngine.Random.insideUnitSphere * UnityEngine.Random.Range(0, dist);
+        randDirection += origin;
+
+        return randDirection;
+    }
+
+    IEnumerator ApprehendingPlayer()
+    {
+        print("ApprehendingPlayer: starting apprehending player coroutine");
+        apprehendingPlayerCouroutineRunning = true;
+
+        while (state == States.ApprehendingPlayer)
+        {
+            if (CanSeePlayer())
+            {
+                transform.LookAt(player.position);
+                transform.position = Vector3.MoveTowards(transform.position, player.position, runSpeed * Time.deltaTime);
+                animator.SetFloat("speedPercent", 1.0f, speedSmoothTime, Time.deltaTime);
+            } else
+            {
+                state = States.SearchingForPlayer;
+            }
+            yield return null;
+        }
+        apprehendingPlayerCouroutineRunning = false;
+    }
+
+    IEnumerator Wait(float waitTime)
+    {
+        animator.SetFloat("speedPercent", 0);
+        yield return new WaitForSeconds(waitTime);
+    }
+
     IEnumerator TurnToFace(Vector3 lookTarget)
     {
-        animator.SetFloat("speedPercent", 0, speedSmoothTime, Time.deltaTime);
         Vector3 dirToLookTarget = (lookTarget - transform.position).normalized;
         float targetAngle = 90 - Mathf.Atan2(dirToLookTarget.z, dirToLookTarget.x) * Mathf.Rad2Deg;
 
@@ -157,27 +251,29 @@ public class Guard : MonoBehaviour {
         }
     }
 
-    #endregion
-
-    #region Player Detection
+    bool AlertSetActive(bool activeState)
+    {
+        if(alert != null)
+        {
+            alert.SetActive(activeState);
+            return true;
+        }
+        return false;
+    }
 
     void SpotPlayer()
     {
         if (CanSeePlayer())
-        {
             playerVisibleTimer += Time.deltaTime;
-        }
         else
-        {
             playerVisibleTimer -= Time.deltaTime;
-        }
+   
         playerVisibleTimer = Mathf.Clamp(playerVisibleTimer, 0, timeToSpotPlayer);
         spotlight.color = Color.Lerp(originalSpotlightColour, Color.red, playerVisibleTimer / timeToSpotPlayer);
 
         if (playerVisibleTimer >= timeToSpotPlayer)
         {
-            state = States.alerted;
-            //if (OnGuardHasSpottedPlayer != null) { OnGuardHasSpottedPlayer(); }
+            state = States.Alerted;
         }
     } 
     
@@ -198,10 +294,18 @@ public class Guard : MonoBehaviour {
         return false;
     }
 
-    #endregion
+    bool VisionObstructedToPosition(Vector3 position)
+    {
+        if(Physics.Linecast(transform.position, position, viewMask))
+        {
+            return true;
+        }
+        return false;
+    }
 
     void GuardPatrolling()
     {
+        AlertSetActive(false);
         if (!followPathCoroutineRunning)
         {
             StartCoroutine(FollowPath(GenerateWaypointPositions()));
@@ -210,25 +314,25 @@ public class Guard : MonoBehaviour {
 
     void GuardAlerted()
     {
-        print("Guard Alerted");
-        
-        //Change Colour of Alert
-        
-        //alert.SetActive(true);
-        if (CanSeePlayer())
+        if(!moveToPositionCoroutineRunning)
         {
-            Vector3 playerLastSceenPosition = player.position;
-            transform.position = Vector3.MoveTowards(transform.position, playerLastSceenPosition, runSpeed * Time.deltaTime);
-            animator.SetFloat("speedPercent", 1.0f, speedSmoothTime, Time.deltaTime);
-        } else
-        {
-           // alert.SetActive(false);
-            state = States.patrolling;
+            StartCoroutine(MoveToPlayersLastKnownPosition(player.position));
         }
     }
 
-    void GuardHasSpottedPlayer()
+    void GuardSearchingForPlayer()
     {
-        print("Spotted Player");
+        if (!searchingForPlayerCoroutineRunning)
+        {
+            StartCoroutine(SearchForPlayer());
+        }
+    }
+
+    void GuardApprehendingPlayer()
+    {
+        if (!apprehendingPlayerCouroutineRunning)
+        {
+            StartCoroutine(ApprehendingPlayer());
+        }
     }
 }
