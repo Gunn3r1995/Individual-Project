@@ -7,12 +7,10 @@ namespace Assets.Scripts
     public class PlayerController : MonoBehaviour
     {
         public System.Action OnReachedEndOfLevel;
-        new Rigidbody rigidbody;
         //bool disabled;
 
         void Start()
         {
-            rigidbody = GetComponent<Rigidbody>();
             //Guard.OnGuardApprehendingPlayer += Disable;
         }
 
