@@ -363,6 +363,36 @@ Mesh:
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
   m_MeshOptimized: 0
+--- !u!1 &712037741 stripped
+GameObject:
+  m_PrefabParentObject: {fileID: 1444240078385182, guid: 6528abe64fef0414495e751ceaf522cd,
+    type: 2}
+  m_PrefabInternal: {fileID: 1224186332}
+--- !u!114 &712037745
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 712037741}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 922deb8a738fc074b8e37b553b566d97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Target: {fileID: 0}
+  state: 0
+  Waypoints:
+  - {fileID: 1315525328}
+  - {fileID: 774361917}
+  - {fileID: 890249193}
+  - {fileID: 993079181}
+  RandomWaypoints: 0
+  PatrolSpeed: 5
+--- !u!1 &774361917 stripped
+GameObject:
+  m_PrefabParentObject: {fileID: 1436233326121722, guid: 6528abe64fef0414495e751ceaf522cd,
+    type: 2}
+  m_PrefabInternal: {fileID: 1224186332}
 --- !u!1 &871580383
 GameObject:
   m_ObjectHideFlags: 0
@@ -756,9 +786,28 @@ Prefab:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    - target: {fileID: 114200876259924840, guid: 6528abe64fef0414495e751ceaf522cd,
+        type: 2}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4962499271285292, guid: 6528abe64fef0414495e751ceaf522cd, type: 2}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4962499271285292, guid: 6528abe64fef0414495e751ceaf522cd, type: 2}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 195196012522066620, guid: 6528abe64fef0414495e751ceaf522cd, type: 2}
   m_ParentPrefab: {fileID: 100100000, guid: 6528abe64fef0414495e751ceaf522cd, type: 2}
   m_IsPrefabParent: 0
+--- !u!1 &1315525328 stripped
+GameObject:
+  m_PrefabParentObject: {fileID: 1351973179198468, guid: 6528abe64fef0414495e751ceaf522cd,
+    type: 2}
+  m_PrefabInternal: {fileID: 1224186332}
 --- !u!1001 &1345079156
 Prefab:
   m_ObjectHideFlags: 0
@@ -969,7 +1018,7 @@ GameObject:
   - component: {fileID: 1502487581}
   - component: {fileID: 1502487580}
   - component: {fileID: 1502487579}
-  m_Layer: 9
+  m_Layer: 8
   m_Name: Cube
   m_TagString: World
   m_Icon: {fileID: 0}
@@ -1168,12 +1217,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ee2d34dcec2bd34d859cd850a977a5a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DisplayGridGizmos: 1
+  DisplayGridGizmos: 0
   UnwalkableMask:
     serializedVersion: 2
-    m_Bits: 512
+    m_Bits: 768
   GridWorldSize: {x: 120, y: 100}
-  NodeRadius: 0.5
+  NodeRadius: 0.25
 --- !u!4 &1838579266
 Transform:
   m_ObjectHideFlags: 0

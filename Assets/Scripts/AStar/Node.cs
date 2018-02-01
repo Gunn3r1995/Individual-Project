@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Assets.Scripts
+namespace Assets.Scripts.AStar
 {
     public class Node : IHeapItem<Node> {
         public bool walkable;

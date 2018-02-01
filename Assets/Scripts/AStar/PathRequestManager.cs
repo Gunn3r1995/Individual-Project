@@ -1,8 +1,8 @@
-﻿using UnityEngine;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 
-namespace Assets.Scripts
+namespace Assets.Scripts.AStar
 {
     public class PathRequestManager : MonoBehaviour {
         private Queue<PathRequest> pathRequestQueue = new Queue<PathRequest>();

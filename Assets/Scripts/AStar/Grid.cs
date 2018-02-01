@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace Assets.Scripts
+namespace Assets.Scripts.AStar
 {
     public class Grid : MonoBehaviour
     {
@@ -41,8 +41,9 @@ namespace Assets.Scripts
                     if (walkable)
                     {
                         //Check for ground
-                        worldPoint.y += 2.0f;
-                        walkable = (Physics.Raycast(worldPoint, -Vector3.up));
+                        Vector3 temp = worldPoint;
+                        temp.y += 2.0f;
+                        walkable = (Physics.Raycast(temp, -Vector3.up));
                     }
 
                     grid[x, y] = new Node(walkable, worldPoint, x, y);

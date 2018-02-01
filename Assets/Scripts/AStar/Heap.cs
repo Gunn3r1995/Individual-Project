@@ -1,8 +1,6 @@
-﻿using UnityEngine;
-using System;
-using System.Collections;
+﻿using System;
 
-namespace Assets.Scripts
+namespace Assets.Scripts.AStar
 {
     public class Heap<T> where T : IHeapItem<T>
     {

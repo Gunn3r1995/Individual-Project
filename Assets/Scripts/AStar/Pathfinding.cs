@@ -2,9 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Diagnostics;
 
-namespace Assets.Scripts
+namespace Assets.Scripts.AStar
 {
     public class Pathfinding : MonoBehaviour
     {
@@ -13,7 +12,6 @@ namespace Assets.Scripts
 
         private void Awake()
         {
-            print("Awake Pathfinding");
             grid = GetComponent<Grid>();
             requestManager = GetComponent<PathRequestManager>();
         }
@@ -30,15 +28,6 @@ namespace Assets.Scripts
 
             Node startNode = grid.GetNodeFromWorldPoint(startPos);
             Node targetNode = grid.GetNodeFromWorldPoint(targetPos);
-
-            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube.transform.position = startNode.WorldPosition;
-
-            GameObject cube2 = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube2.transform.position = targetNode.WorldPosition;
-
-            print(startNode.walkable);
-            print(targetNode.walkable);
 
             if (startNode.walkable && targetNode.walkable)
             {

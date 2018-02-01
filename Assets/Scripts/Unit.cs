@@ -1,67 +1,155 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
+using Assets.Scripts.AStar;
 using UnityEngine;
+using UnityStandardAssets.Characters.ThirdPerson;
 
 namespace Assets.Scripts
 {
     public class Unit : MonoBehaviour
     {
         public Transform Target;
-        private float speed = 10;
-        private Vector3[] path;
-        private int targetIndex;
+        private Vector3[] _path;
+        private int _targetIndex;
+        private float _currentSpeed;
 
-        void Start()
+        public enum State { Patrol, Alert, Search, Chase }
+        public State state;
+
+        private ThirdPersonCharacter _character;
+        private bool _patrolling;
+
+        // Patrolling
+        public GameObject[] Waypoints;
+        public bool RandomWaypoints;
+        public float PatrolSpeed = 1.0f;
+        private int _waypointIndex = 0;
+
+        private void Start()
         {
-            print("Position: " + transform.localPosition);
-            print("Position: " + transform.position);
+            _character = GetComponent<ThirdPersonCharacter>();
+            _currentSpeed = PatrolSpeed;
+            state = State.Patrol;
 
-            print("Target: " + Target.position);
-            PathRequestManager.RequestPath(this.transform.position, Target.position, OnPathFound);
+            //PathRequestManager.RequestPath(this.transform.position, Target.position, OnPathFound);
+        }
+
+        private void Update()
+        {
+            FSM();
+        }
+
+        private void FSM()
+        {
+            switch (state)
+            {
+                case State.Patrol:
+                    if (!_patrolling)
+                    {
+                        //if (randomWaypoints)
+                        //{
+                        //    StartCoroutine(RandomPatrol());
+                        //}
+                        StartCoroutine(Patrol());
+                    }
+                    break;
+                case State.Alert:
+                    break;
+                case State.Search:
+                    print("Searching");
+                    break;
+                case State.Chase:
+                    print("Chase State");
+                    break;
+            }
         }
 
         public void OnPathFound(Vector3[] newPath, bool pathSuccessful)
         {
-            print("Path Found");
-            if (pathSuccessful)
+            if (!pathSuccessful) return;
+
+            _path = newPath;
+            StopCoroutine("FollowPath");
+            StartCoroutine("FollowPath");
+        }
+
+        private IEnumerator Patrol()
+        {
+            print("Patrolling");
+            _patrolling = true;
+
+            while (state == State.Patrol)
             {
-                path = newPath;
-                StopCoroutine("FollowPath");
-                StartCoroutine("FollowPath");
+                _currentSpeed = PatrolSpeed;
+                var distance = Vector3.Distance(transform.position, Waypoints[_waypointIndex].transform.position);
+                if (distance >= 2.0f)
+                {
+                    PathRequestManager.RequestPath(transform.position, Waypoints[_waypointIndex].transform.position, OnPathFound);
+                }
+                if (distance <= 2.0f)
+                {
+                    _waypointIndex += 1;
+                    if (_waypointIndex >= Waypoints.Length)
+                    {
+                        _waypointIndex = 0;
+                    }
+                    PathRequestManager.RequestPath(transform.position, Waypoints[_waypointIndex].transform.position, OnPathFound);
+                }
+                else
+                {
+                    _character.Move(Vector3.zero, false, false);
+                }
+
+                yield return null;
             }
+
+            _patrolling = false;
         }
 
         private IEnumerator FollowPath()
         {
-            print("Follow Path");
-            Vector3 currentWaypoint = path[0];
+            var currentWaypoint = _path[0];
 
             while (true)
             {
                 if (transform.position == currentWaypoint)
                 {
-                    targetIndex++;
-                    if (targetIndex >= path.Length)
+                    _targetIndex++;
+                    if (_targetIndex >= _path.Length)
                     {
                         yield break;
                     }
-                    currentWaypoint = path[targetIndex];
+                    currentWaypoint = _path[_targetIndex];
                 }
-                transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, speed * Time.deltaTime);
+
+                transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, _currentSpeed * Time.deltaTime);
+                _character.Move((currentWaypoint - transform.position).normalized * _currentSpeed, false, false);
                 yield return null;
             }
         }
 
         public void OnDrawGizmos()
         {
-            if (path != null)
-            {
-                for (int i = targetIndex; i < path.Length; i++)
-                {
-                    Gizmos.color = Color.black;
-                    Gizmos.DrawCube(path[i], Vector3.one);
+            if (_path == null) return;
 
-                    Gizmos.DrawLine(i == targetIndex ? transform.position : path[i - 1], path[i]);
-                }
+            var startPosition = Waypoints[0].transform.position;
+            var previousPosition = startPosition;
+
+            foreach (var waypoint in Waypoints)
+            {
+                Gizmos.DrawSphere(waypoint.transform.position, 0.3f);
+                Gizmos.DrawLine(previousPosition, waypoint.transform.position);
+                previousPosition = waypoint.transform.position;
+            }
+
+            Gizmos.DrawLine(previousPosition, startPosition);
+
+            for (var i = _targetIndex; i < _path.Length; i++)
+            {
+                Gizmos.color = Color.black;
+                Gizmos.DrawCube(_path[i], Vector3.one);
+
+                Gizmos.DrawLine(i == _targetIndex ? transform.position : _path[i - 1], _path[i]);
             }
         }
     }
