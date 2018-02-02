@@ -39,29 +39,38 @@ namespace Assets.Scripts.AStar
             StartCoroutine("FollowPath");
         }
 
+		public void StopMoving()
+		{
+            _speed = 0;
+            _character.Move(Vector3.zero, false, false);
+		}
+
         public void StopMoving(bool crouch, bool jump){
             _character.Move(Vector3.zero, crouch, jump);
         }
 
         private IEnumerator FollowPath()
         {
-            var currentWaypoint = _path[0];
-
-            while (true)
+            if (_path.Length >= 1)
             {
-                if (transform.position == currentWaypoint)
-                {
-                    _targetIndex++;
-                    if (_targetIndex >= _path.Length)
-                    {
-                        yield break;
-                    }
-                    currentWaypoint = _path[_targetIndex];
-                }
+                var currentWaypoint = _path[0];
 
-                transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, _speed * Time.deltaTime);
-                _character.Move((currentWaypoint - transform.position).normalized * _speed, false, false);
-                yield return null;
+                while (true)
+                {
+                    if (transform.position == currentWaypoint)
+                    {
+                        _targetIndex++;
+                        if (_targetIndex >= _path.Length)
+                        {
+                            yield break;
+                        }
+                        currentWaypoint = _path[_targetIndex];
+                    }
+
+                    transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, _speed * Time.deltaTime);
+                    _character.Move((currentWaypoint - transform.position).normalized * _speed, false, false);
+                    yield return null;
+                }
             }
         }
 

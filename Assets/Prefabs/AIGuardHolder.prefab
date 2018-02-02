@@ -2756,14 +2756,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1c27ff9de89144425a7b6ec0e70ba5c3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Player: {fileID: 0}
+  AutoTargetPlayer: 1
   state: 0
-  Waypoints:
-  - {fileID: 1036691546546828}
-  - {fileID: 1608370425669056}
-  - {fileID: 1821162137662370}
-  - {fileID: 1711585435416322}
+  heightMultiplier: 1.36
+  sightDistance: 10
+  viewMask:
+    serializedVersion: 2
+    m_Bits: 256
+  timeToSpotPlayer: 0.5
+  spotlight: {fileID: 108732552769600642}
+  Waypoints: []
   RandomWaypoints: 0
-  PatrolSpeed: 0.75
+  PatrolSpeed: 0.5
+  AlertReactionTime: 1
+  InvestigateSpeed: 0.75
+  InvestigateTime: 60
+  WanderRadius: 10
+  ChaseSpeed: 1.5
 --- !u!114 &114588955296880516
 MonoBehaviour:
   m_ObjectHideFlags: 1

@@ -29,7 +29,10 @@ namespace Assets.Scripts.AStar
             Node startNode = grid.GetNodeFromWorldPoint(startPos);
             Node targetNode = grid.GetNodeFromWorldPoint(targetPos);
 
-            if (startNode.walkable && targetNode.walkable)
+            if (startNode == targetNode)
+            {
+                pathSuccess = true;
+            } else if (startNode.walkable && targetNode.walkable)
             {
                 Heap<Node> openSet = new Heap<Node>(grid.MaxSize);
                 HashSet<Node> closedSet = new HashSet<Node>();

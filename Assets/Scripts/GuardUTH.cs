@@ -52,7 +52,6 @@ namespace Assets.Scripts
         float playerVisibleTimer;
         public Light spotlight;
 
-
         Color originalSpotlightColour;
         float viewAngle;
 
@@ -309,8 +308,6 @@ namespace Assets.Scripts
 
             Gizmos.color = Color.red;
             Gizmos.DrawRay(transform.position + Vector3.up * heightMultiplier, transform.forward * sightDistance);
-
-
         }
 
         /*

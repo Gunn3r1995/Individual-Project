@@ -37,7 +37,6 @@ namespace Assets.Scripts.AStar
                     Vector3 worldPoint = worldBottomLeft + Vector3.right * (x * nodeDiameter + NodeRadius) + Vector3.forward * (y * nodeDiameter + NodeRadius);
 
                     bool walkable = !(Physics.CheckSphere(worldPoint, NodeRadius, UnwalkableMask));
-
                     if (walkable)
                     {
                         //Check for ground
