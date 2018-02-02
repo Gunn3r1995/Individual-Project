@@ -6,7 +6,7 @@ namespace Assets.Scripts
 {
     public class Guard : MonoBehaviour
     {
-        
+        #region Variables
         public GameObject Player;
         public bool AutoTargetPlayer;
         public enum State { Patrol, Alert, Investigate, Chase }
@@ -15,7 +15,7 @@ namespace Assets.Scripts
         private AStar.Grid _grid;
 		private GridAgent _gridAgent;
 
-		// Sight
+		#region Sight
 		public float heightMultiplier = 1.36f;
 		public float sightDistance = 10f;
 		public LayerMask viewMask;
@@ -25,33 +25,43 @@ namespace Assets.Scripts
 		private float playerVisibleTimer;
 		private Color originalSpotlightColour;
 		private float viewAngle;
+        #endregion
 
-		// Patrolling
-		public GameObject[] Waypoints;
+        #region Patrol
+        public GameObject[] Waypoints;
 		public bool RandomWaypoints;
 		public float PatrolSpeed = 0.75f;
 
 		private int _waypointIndex;
 		private bool _patrolling;
+		#endregion
 
-        // Alerted
-        public float AlertReactionTime = 1.0f;
+		#region Alert
+		public float AlertReactionTime = 1.0f;
 
 		private Vector3 AlertSpot;
 		private bool _alerted;
+		#endregion
 
-        // Investigating
-        public float InvestigateSpeed = 1.0f;
-        public float InvestigateTime = 60.0f;
-        public float WanderRadius = 10.0f;
+		#region Investigate
+		public float InvestigateSpeed = 1.0f;
+		public float InvestigateTime = 60.0f;
+        public float InvestigateSpotTime = 5.0f;
+		public float WanderRadius = 5.0f;
 
 		private bool _investigating;
+		#endregion
 
-        // Chasing
-        public float ChaseSpeed = 2.0f;
+		#region Chase
+		public float ChaseSpeed = 2.0f;
 		private bool _chasing;
+        #endregion
 
-        void Start()
+        #endregion
+
+        float timer = 0.0f;
+
+		void Start()
         {
             _grid = FindObjectOfType<AStar.Grid>();
             _gridAgent = GetComponent<GridAgent>();
@@ -105,7 +115,7 @@ namespace Assets.Scripts
 			{
                 _gridAgent.SetSpeed(PatrolSpeed);
 
-                if (HasReachedDestintion(transform.position, Waypoints[_waypointIndex].transform.position))
+                if (Vector3.Distance(transform.position, Waypoints[_waypointIndex].transform.position) <= 2.0f)
                 {
                     if (RandomWaypoints)
                     {
@@ -123,7 +133,6 @@ namespace Assets.Scripts
                 _gridAgent.SetDestination(transform.position, Waypoints[_waypointIndex].transform.position);
 				yield return null;
 			}
-
 			_patrolling = false;
 		}
 
@@ -131,24 +140,30 @@ namespace Assets.Scripts
             print("Alerted");
             _alerted = true;
 
-            if (CanSeePlayer())
-                AlertSpot = Player.transform.position;
-
+			if (CanSeePlayer())
+				AlertSpot = Player.transform.position;
+            
             transform.LookAt(AlertSpot);
-
-            _gridAgent.SetSpeed(0);
             _gridAgent.StopMoving();
 
-            yield return StartCoroutine(Wait(AlertReactionTime));
+            yield return new WaitForSeconds(AlertReactionTime);
 
-            while(state == State.Alert){
-                if(CanSeePlayer()) {
-                    state = State.Chase;
-                } else {
+            while(state == State.Alert) {
+				if (CanSeePlayer())
+					state = State.Chase;
+                
+                _gridAgent.StopMoving();
+                if (Vector3.Distance(transform.position, AlertSpot) <= 2.0f)
+				{
+                    yield return StartCoroutine(LookForPlayer(InvestigateSpotTime));
                     state = State.Investigate;
+                    break;
                 }
 
-                yield return null;
+				_gridAgent.SetSpeed(InvestigateSpeed);
+				_gridAgent.SetDestination(transform.position, AlertSpot);
+
+				yield return null;
             }
             _alerted = false;
         }
@@ -157,112 +172,36 @@ namespace Assets.Scripts
             print("Investigating");
             _investigating = true;
 
-            var posLagTimer = 3.0f;
+            var lastPos = new Vector3(0, 0, 0);
 
-            var alertSpotReached = false;
-            var timer = 0.0f;
-            var posLag = 0.0f;
-
-            Vector3 targetPosition = RandomNavSphere(AlertSpot, WanderRadius);
+            Vector3 targetPosition = CreateRandomWalkablePosition(AlertSpot, WanderRadius, ref lastPos);
 
             while(state == State.Investigate){
-                if (!alertSpotReached)
-                {
-                    if (HasReachedDestintion(transform.position, AlertSpot))
-                    {
-                        posLag += Time.deltaTime;
-                        _gridAgent.StopMoving();
-						if (posLag >= posLagTimer)
-						{
-                            _gridAgent.SetSpeed(InvestigateSpeed);
-							alertSpotReached = true;
-                            posLag = 0.0f;
-						}
-                    }
-                    else
-                    {
-                        _gridAgent.SetSpeed(InvestigateSpeed);
-                        _gridAgent.SetDestination(transform.position, AlertSpot);
-                    }
-                } else {
-					timer += Time.deltaTime;
-
-                    if(HasReachedDestintion(transform.position, targetPosition)) {
-						transform.LookAt(targetPosition);
-						posLag += Time.deltaTime;
-						_gridAgent.StopMoving();
-
-						if (posLag >= posLagTimer)
-						{
-							targetPosition = RandomNavSphere(AlertSpot, WanderRadius);
-							posLag = 0.0f;
-						}
-                    } else {
-                        _gridAgent.SetSpeed(InvestigateSpeed);
-                        _gridAgent.SetDestination(transform.position, targetPosition);
-                    }
-
-                    if (timer >= InvestigateTime){
-                        print("Times Up");
-                        state = State.Patrol;
-                    }
-                }
+				timer += Time.deltaTime;
 
 				if (CanSeePlayer())
 					state = State.Chase;
+                
+                _gridAgent.StopMoving();
+                if (Vector3.Distance(transform.position, targetPosition) <= 2.0f) {
+                    yield return StartCoroutine(LookForPlayer(InvestigateSpotTime));
+                    yield return new WaitForSeconds(InvestigateSpotTime);
+                    timer += InvestigateSpotTime;
+                    targetPosition = CreateRandomWalkablePosition(AlertSpot, WanderRadius, ref lastPos);	
+                }
+
+				_gridAgent.SetSpeed(InvestigateSpeed);
+				_gridAgent.SetDestination(transform.position, targetPosition);
+
+                if (timer >= InvestigateTime){
+                    state = State.Patrol;
+                    break;
+                }
 
                 yield return null;
             }
             _investigating = false;
         }
-
-		private bool HasReachedDestintion(Vector3 current, Vector3 target)
-		{
-			if (_grid != null)
-			{
-				Node currentNode = _grid.GetNodeFromWorldPoint(current);
-				Node targetNode = _grid.GetNodeFromWorldPoint(target);
-
-                if (currentNode.WorldPosition == targetNode.WorldPosition)
-                {
-                    return true;
-                }
-			}
-			return false;
-		}
-
-        private Vector3 RandomNavSphere(Vector3 origin, float dist)
-		{
-            if(_grid != null){
-				//Create Nav Sphere where position is walkable.
-                Vector3 randDirection = Random.insideUnitSphere * dist;
-                Vector3 newPos = origin += randDirection;
-                newPos.y = 0;
-
-                Node node = _grid.GetNodeFromWorldPoint(newPos);
-                while(HasReachedDestintion(transform.position, newPos)){
-					randDirection = Random.insideUnitSphere * dist;
-					newPos = origin += randDirection;
-					newPos.y = 0;
-                }
-
-                if(!node.walkable) {
-                    while (true) {
-                        randDirection = Random.insideUnitSphere * dist;
-                        newPos = origin += randDirection;
-						newPos.y = 0;
-
-                        node = _grid.GetNodeFromWorldPoint(newPos);
-                        if(node.walkable && !HasReachedDestintion(transform.position, newPos)) {
-                            return newPos;
-                        }
-                    }
-                }
-                return newPos;
-            } else {
-                return new Vector3();
-            }
-		}
 
 		private IEnumerator Chase()
 		{
@@ -277,11 +216,6 @@ namespace Assets.Scripts
 				yield return null;
 			}
             _chasing = false;
-		}
-
-		IEnumerator Wait(float waitTime)
-		{
-			yield return new WaitForSeconds(waitTime);
 		}
 
 		void SpotPlayer()
@@ -317,6 +251,59 @@ namespace Assets.Scripts
 				}
 			}
 			return false;
+		}
+
+        private IEnumerator LookForPlayer(float waitTime) {
+            timer = 0;
+
+            while(timer <= waitTime) {
+				if (CanSeePlayer())
+					state = State.Chase;
+
+				timer += Time.deltaTime;
+                yield return null;
+            }
+        }
+
+		private Vector3 CreateRandomWalkablePosition(Vector3 origin, float dist, ref Vector3 lastPos, AStar.Grid grid = null)
+		{
+			if (grid == null)
+			{
+				grid = FindObjectOfType<AStar.Grid>();
+			}
+
+			if (grid != null)
+			{
+				Vector3 randomPosition = CreateRandomPosition(origin, dist);
+
+				Node newPositionNode = grid.GetNodeFromWorldPoint(randomPosition);
+                Node lastPositionNode = grid.GetNodeFromWorldPoint(lastPos);
+                while (!newPositionNode.walkable || Vector3.Distance(lastPositionNode.WorldPosition, newPositionNode.WorldPosition) <= 2.0f)
+				{
+					randomPosition = CreateRandomPosition(origin, dist);
+					newPositionNode = grid.GetNodeFromWorldPoint(randomPosition);
+				}
+
+                lastPos = randomPosition;
+				return randomPosition;
+			}
+			else
+			{
+				Debug.LogError("Grid doesn't exist");
+                lastPos = new Vector3();
+				return new Vector3();
+			}
+
+		}
+
+		public static Vector3 CreateRandomPosition(Vector3 origin, float dist)
+		{
+			Vector3 randomPosition = Random.insideUnitSphere;
+			randomPosition.y = 0;
+			randomPosition.Normalize();
+			randomPosition *= dist;
+
+			return randomPosition + origin;
 		}
 
 		public void OnDrawGizmos()

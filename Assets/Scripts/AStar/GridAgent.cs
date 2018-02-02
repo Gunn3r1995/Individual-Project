@@ -41,11 +41,12 @@ namespace Assets.Scripts.AStar
 
 		public void StopMoving()
 		{
-            _speed = 0;
+            SetSpeed(0);
             _character.Move(Vector3.zero, false, false);
 		}
 
         public void StopMoving(bool crouch, bool jump){
+            SetSpeed(0);
             _character.Move(Vector3.zero, crouch, jump);
         }
 
