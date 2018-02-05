@@ -7,6 +7,10 @@ namespace Assets.Scripts
     public class Guard : MonoBehaviour
     {
         #region Variables
+        public static event System.Action OnGuardCaughtPlayer;
+
+        FieldOfView _FOV;
+        private AudioSource _audioSource;
         public GameObject Player;
         public bool AutoTargetPlayer;
         public enum State { Patrol, Alert, Investigate, Chase }
@@ -16,28 +20,26 @@ namespace Assets.Scripts
 		private GridAgent _gridAgent;
 
 		#region Sight
-		public float heightMultiplier = 1.36f;
-		public float sightDistance = 10f;
-		public LayerMask viewMask;
 		public float timeToSpotPlayer = 0.5f;
-		public Light spotlight;
-
 		private float playerVisibleTimer;
-		private Color originalSpotlightColour;
-		private float viewAngle;
         #endregion
 
         #region Patrol
         public GameObject[] Waypoints;
 		public bool RandomWaypoints;
 		public float PatrolSpeed = 0.75f;
+        public float PatrolWaitTime = 3.0f;
 
 		private int _waypointIndex;
 		private bool _patrolling;
-		#endregion
+        #endregion
 
-		#region Alert
-		public float AlertReactionTime = 1.0f;
+        #region Alert
+        public Transform AlertGroup01;
+        public Transform AlertGroup02;
+        public Transform AlertGroup03;
+
+		public float AlertReactionTime = 2.0f;
 
 		private Vector3 AlertSpot;
 		private bool _alerted;
@@ -63,6 +65,8 @@ namespace Assets.Scripts
 
 		void Start()
         {
+            _FOV = FindObjectOfType<FieldOfView>();
+            _audioSource = FindObjectOfType<AudioSource>();
             _grid = FindObjectOfType<AStar.Grid>();
             _gridAgent = GetComponent<GridAgent>();
 
@@ -72,13 +76,17 @@ namespace Assets.Scripts
             if (RandomWaypoints)
                 _waypointIndex = Random.Range(0, Waypoints.Length);
 
+            SetAlertInactive();
+
 			state = State.Patrol;
-			viewAngle = spotlight.spotAngle;
-			originalSpotlightColour = spotlight.color;
         }
 
         void Update()
         {
+            // TODO FIX ME
+			//AudioClip clip = Resources.Load<AudioClip>("Voices/huh_01");
+			//_audioSource.PlayOneShot(clip);
+
             FSM();
         }
 
@@ -111,12 +119,16 @@ namespace Assets.Scripts
 			print("Patrolling");
 			_patrolling = true;
 
+            SetAlertInactive();
+
 			while (state == State.Patrol)
 			{
                 _gridAgent.SetSpeed(PatrolSpeed);
 
                 if (Vector3.Distance(transform.position, Waypoints[_waypointIndex].transform.position) <= 2.0f)
                 {
+                    _gridAgent.StopMoving();
+                    yield return StartCoroutine(LookForPlayer(PatrolWaitTime));
                     if (RandomWaypoints)
                     {
                         _waypointIndex = Random.Range(0, Waypoints.Length);
@@ -140,6 +152,7 @@ namespace Assets.Scripts
             print("Alerted");
             _alerted = true;
 
+
 			if (CanSeePlayer())
 				AlertSpot = Player.transform.position;
             
@@ -155,7 +168,7 @@ namespace Assets.Scripts
                 _gridAgent.StopMoving();
                 if (Vector3.Distance(transform.position, AlertSpot) <= 2.0f)
 				{
-                    yield return StartCoroutine(LookForPlayer(InvestigateSpotTime));
+                    yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
                     state = State.Investigate;
                     break;
                 }
@@ -184,7 +197,7 @@ namespace Assets.Scripts
                 
                 _gridAgent.StopMoving();
                 if (Vector3.Distance(transform.position, targetPosition) <= 2.0f) {
-                    yield return StartCoroutine(LookForPlayer(InvestigateSpotTime));
+                    yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
                     yield return new WaitForSeconds(InvestigateSpotTime);
                     timer += InvestigateSpotTime;
                     targetPosition = CreateRandomWalkablePosition(AlertSpot, WanderRadius, ref lastPos);	
@@ -203,57 +216,95 @@ namespace Assets.Scripts
             _investigating = false;
         }
 
-		private IEnumerator Chase()
-		{
+        private IEnumerator Chase()
+        {
             print("Chasing");
             _chasing = true;
 
             while (state == State.Chase)
-			{
-                _gridAgent.SetSpeed(ChaseSpeed);
-                _gridAgent.SetDestination(transform.position, Player.transform.position);
-
-				yield return null;
-			}
-            _chasing = false;
-		}
-
-		void SpotPlayer()
-		{
-            if (CanSeePlayer())
             {
-                playerVisibleTimer += Time.deltaTime;
+                _gridAgent.SetSpeed(ChaseSpeed);
+
+                if (CanSeePlayer())
+                {
+                    transform.LookAt(Player.transform);
+                    _gridAgent.SetDestination(transform.position, Player.transform.position);
+
+                    if (Vector3.Distance(transform.position, Player.transform.position) >= 2.0f)
+                    {
+                        if (OnGuardCaughtPlayer != null)
+                        {
+                            OnGuardCaughtPlayer();
+                        }
+                    }
+                }
+
+                yield return null;
             }
-			else
-				playerVisibleTimer -= Time.deltaTime;
+            _chasing = false;
+        }
+
+        void SpotPlayer() {
+
+            if(_FOV.visibleTargets.Count > 0) {
+                playerVisibleTimer += Time.deltaTime;
+
+			} else  {
+                playerVisibleTimer -= Time.deltaTime;
+            }
 
 			playerVisibleTimer = Mathf.Clamp(playerVisibleTimer, 0, timeToSpotPlayer);
-			spotlight.color = Color.Lerp(originalSpotlightColour, Color.red, playerVisibleTimer / timeToSpotPlayer);
 
-            if (playerVisibleTimer >= timeToSpotPlayer)
+            foreach(Transform child in AlertGroup01) {
+                child.GetComponent<Renderer>().material.color = Color.Lerp(Color.white, Color.red, playerVisibleTimer / timeToSpotPlayer);
+            }
+
+			foreach (Transform child in AlertGroup02)
 			{
-                state = State.Alert;
+				child.GetComponent<Renderer>().material.color = Color.Lerp(Color.white, Color.red, playerVisibleTimer / timeToSpotPlayer);
 			}
-		}
+			foreach (Transform child in AlertGroup03)
+			{
+				child.GetComponent<Renderer>().material.color = Color.Lerp(Color.white, Color.red, playerVisibleTimer / timeToSpotPlayer);
+			}
+
+
+            if(playerVisibleTimer >=  timeToSpotPlayer/3) {
+                AlertGroup01.gameObject.SetActive(true);
+                AlertGroup01.gameObject.SetActive(true);
+                
+            } else { AlertGroup01.gameObject.SetActive(false);}
+
+            if  ( playerVisibleTimer >= (timeToSpotPlayer / 3) * 2) {
+                AlertGroup02.gameObject.SetActive(true);
+
+            } else { AlertGroup02.gameObject.SetActive(false); }
+
+            if (playerVisibleTimer >= timeToSpotPlayer) {
+                AlertGroup03.gameObject.SetActive(true);
+				state = State.Alert;
+            } else { AlertGroup03.gameObject.SetActive(false); }
+        }
 
 		bool CanSeePlayer()
 		{
-			if (Vector3.Distance(transform.position, Player.transform.position) < sightDistance)
+            return _FOV.visibleTargets.Count > 0;
+        }
+
+		private IEnumerator LookForPlayer(float waitTime)
+		{
+			timer = 0;
+
+			while (timer <= waitTime)
 			{
-                Vector3 dirToPlayer = (Player.transform.position - transform.position).normalized;
-				float angleBetweenGuardAndPlayer = Vector3.Angle(transform.forward, dirToPlayer);
-				if (angleBetweenGuardAndPlayer < viewAngle / 2f)
-				{
-                    if (!Physics.Linecast(transform.position, Player.transform.position, viewMask))
-					{
-						return true;
-					}
-				}
+                SpotPlayer();
+
+				timer += Time.deltaTime;
+				yield return null;
 			}
-			return false;
 		}
 
-        private IEnumerator LookForPlayer(float waitTime) {
+        private IEnumerator SearchForPlayer(float waitTime) {
             timer = 0;
 
             while(timer <= waitTime) {
@@ -306,6 +357,12 @@ namespace Assets.Scripts
 			return randomPosition + origin;
 		}
 
+        private void SetAlertInactive() {
+			AlertGroup01.gameObject.SetActive(false);
+			AlertGroup02.gameObject.SetActive(false);
+			AlertGroup03.gameObject.SetActive(false);
+        }
+
 		public void OnDrawGizmos()
 		{
             if (Waypoints.Length >= 1)
@@ -322,9 +379,6 @@ namespace Assets.Scripts
 
                 Gizmos.DrawLine(previousPosition, startPosition);
             }
-
-            Gizmos.color = Color.red;
-            Gizmos.DrawRay(transform.position + Vector3.up * heightMultiplier, transform.forward * sightDistance);
 		}
     }
 }
