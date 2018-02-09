@@ -16,8 +16,7 @@ namespace Assets.Scripts
 
         private void OnTriggerEnter(Collider collider)
         {
-            if (collider.tag == "Finish")
-            {
+            if (collider.tag == "Finish") {
                 //Disable();
                 if (OnReachedEndOfLevel != null)
                 {
