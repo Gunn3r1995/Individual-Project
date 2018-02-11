@@ -19,7 +19,7 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4930094547987544}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Door_Arch_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -52,7 +52,7 @@ GameObject:
   - component: {fileID: 33934820536681352}
   - component: {fileID: 23993836795091432}
   - component: {fileID: 64885134708976696}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Door_Arch_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -67,7 +67,7 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4022377273095244}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Door_Arch_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -85,7 +85,7 @@ GameObject:
   - component: {fileID: 33880481326595140}
   - component: {fileID: 23796937528279144}
   - component: {fileID: 64111611882872128}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Door_Arch_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}

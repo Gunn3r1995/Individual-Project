@@ -45,6 +45,18 @@ namespace Assets.Scripts.AStar
             _character.Move(Vector3.zero, false, false);
 		}
 
+        //public IEnumerator StopMoving(float waitTime)
+        //{
+        //    var timer = 0f;
+        //    while (timer <= waitTime)
+        //    {
+        //        SetSpeed(0);
+        //        _character.Move(Vector3.zero, false, false);
+        //        timer += Time.deltaTime;
+        //        yield return null;
+        //    }
+        //}
+
         public void StopMoving(bool crouch, bool jump){
             SetSpeed(0);
             _character.Move(Vector3.zero, crouch, jump);

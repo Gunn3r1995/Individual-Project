@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using Assets.Scripts.AStar;
 using UnityEngine;
+using UnityStandardAssets.Characters.ThirdPerson;
 
 namespace Assets.Scripts
 {
@@ -29,6 +30,7 @@ namespace Assets.Scripts
 		public bool RandomWaypoints;
 		public float PatrolSpeed = 0.75f;
         public float PatrolWaitTime = 3.0f;
+        public float StoppingDistance = 2.0f;
 
 		private int _waypointIndex;
 		private bool _patrolling;
@@ -125,9 +127,9 @@ namespace Assets.Scripts
 			{
                 _gridAgent.SetSpeed(PatrolSpeed);
 
-                if (Vector3.Distance(transform.position, Waypoints[_waypointIndex].transform.position) <= 2.0f)
+                if (Vector3.Distance(transform.position, Waypoints[_waypointIndex].transform.position) <= StoppingDistance)
                 {
-                    _gridAgent.StopMoving();
+                    //_gridAgent.StopMoving();
                     yield return StartCoroutine(LookForPlayer(PatrolWaitTime));
                     if (RandomWaypoints)
                     {
@@ -244,8 +246,8 @@ namespace Assets.Scripts
             _chasing = false;
         }
 
-        void SpotPlayer() {
-
+        private void SpotPlayer() {
+            if (_FOV == null) { return; }
             if(_FOV.visibleTargets.Count > 0) {
                 playerVisibleTimer += Time.deltaTime;
 
@@ -358,9 +360,9 @@ namespace Assets.Scripts
 		}
 
         private void SetAlertInactive() {
-			AlertGroup01.gameObject.SetActive(false);
-			AlertGroup02.gameObject.SetActive(false);
-			AlertGroup03.gameObject.SetActive(false);
+            AlertGroup01.gameObject.SetActive(false);
+            AlertGroup02.gameObject.SetActive(false);
+            AlertGroup03.gameObject.SetActive(false);
         }
 
 		public void OnDrawGizmos()
@@ -379,6 +381,7 @@ namespace Assets.Scripts
 
                 Gizmos.DrawLine(previousPosition, startPosition);
             }
-		}
+        }
+
     }
 }
