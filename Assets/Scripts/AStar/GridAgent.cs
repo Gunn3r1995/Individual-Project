@@ -8,10 +8,10 @@ namespace Assets.Scripts.AStar
     public class GridAgent : MonoBehaviour
     {
         private Vector3[] _path;
-        private int _targetIndex;
         private float _speed;
+        private int _targetIndex = 0;
         private ThirdPersonCharacter _character;
-
+        private bool _pathFinished;
 
         private void Awake()
         {
@@ -26,36 +26,30 @@ namespace Assets.Scripts.AStar
             this._speed = speed;
         }
 
-        public void SetDestination(Vector3 currentPosition, Vector3 targetPosition) {
-            PathRequestManager.RequestPath(currentPosition, targetPosition, this.OnPathFound);
+        public void SetDestination(Vector3 currentPosition, Vector3 targetPosition)
+        {
+            PathRequestManager.RequestPath(new PathRequest(currentPosition, targetPosition, this.OnPathFound));
         }
 
         public void OnPathFound(Vector3[] newPath, bool pathSuccessful)
         {
-            if (!pathSuccessful) return;
+            if (!pathSuccessful)
+            {
+                _pathFinished = true;
+                return;
+            }
 
+            _pathFinished = false;
             _path = newPath;
-            StopCoroutine("FollowPath");
-            StartCoroutine("FollowPath");
+            StopCoroutine(FollowPath());
+            StartCoroutine(FollowPath());
         }
 
 		public void StopMoving()
 		{
-            SetSpeed(0);
+		    _speed = 0;
             _character.Move(Vector3.zero, false, false);
 		}
-
-        //public IEnumerator StopMoving(float waitTime)
-        //{
-        //    var timer = 0f;
-        //    while (timer <= waitTime)
-        //    {
-        //        SetSpeed(0);
-        //        _character.Move(Vector3.zero, false, false);
-        //        timer += Time.deltaTime;
-        //        yield return null;
-        //    }
-        //}
 
         public void StopMoving(bool crouch, bool jump){
             SetSpeed(0);
@@ -64,27 +58,32 @@ namespace Assets.Scripts.AStar
 
         private IEnumerator FollowPath()
         {
-            if (_path.Length >= 1)
+            Vector3 currentWaypoint = _path[0];
+
+            while (true)
             {
-                var currentWaypoint = _path[0];
-
-                while (true)
+                if (Vector3.Distance(transform.position, currentWaypoint) <= 0.2f)
                 {
-                    if (transform.position == currentWaypoint)
+                    _targetIndex++;
+                    if (_targetIndex >= _path.Length)
                     {
-                        _targetIndex++;
-                        if (_targetIndex >= _path.Length)
-                        {
-                            yield break;
-                        }
-                        currentWaypoint = _path[_targetIndex];
+                        print("Destination Reached");
+                        _pathFinished = true;
+                        _targetIndex = 0;
+                        yield break;
                     }
-
-                    transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, _speed * Time.deltaTime);
-                    _character.Move((currentWaypoint - transform.position).normalized * _speed, false, false);
-                    yield return null;
+                    currentWaypoint = _path[_targetIndex];
                 }
+
+                transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, _speed * Time.deltaTime);
+                _character.Move((currentWaypoint - transform.position).normalized * _speed, false, false);
+                yield return null;
             }
+        }
+
+        public bool HasPathFinished()
+        {
+            return _pathFinished;
         }
 
         public void OnDrawGizmos()
@@ -96,7 +95,14 @@ namespace Assets.Scripts.AStar
                 Gizmos.color = Color.black;
                 Gizmos.DrawCube(_path[i], Vector3.one);
 
-                Gizmos.DrawLine(i == _targetIndex ? transform.position : _path[i - 1], _path[i]);
+                if (i == _targetIndex)
+                {
+                    Gizmos.DrawLine(transform.position, _path[i]);
+                }
+                else
+                {
+                    Gizmos.DrawLine(_path[i - 1], _path[i]);
+                }
             }
         }
     }

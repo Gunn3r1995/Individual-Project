@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Linq;
 using Assets.Scripts.AStar;
 using UnityEngine;
 using UnityStandardAssets.Characters.ThirdPerson;
@@ -73,14 +74,13 @@ namespace Assets.Scripts
             _gridAgent = GetComponent<GridAgent>();
 
             if (AutoTargetPlayer)
-                Player = GameObject.FindGameObjectsWithTag("Player")[0];
+                Player = GameObject.FindGameObjectsWithTag("Player").Last();
 
             if (RandomWaypoints)
                 _waypointIndex = Random.Range(0, Waypoints.Length);
 
             SetAlertInactive();
-
-			state = State.Patrol;
+            state = State.Patrol;
         }
 
         void Update()
@@ -94,61 +94,67 @@ namespace Assets.Scripts
 
 		private void FSM()
 		{
-			switch (state)
-			{
-				case State.Patrol:
-					SpotPlayer();
-					if (!_patrolling)
-                        StartCoroutine("Patrol");
-					break;
-				case State.Alert:
-                    if(!_alerted)
+            switch (state)
+            {
+                case State.Patrol:
+                    SpotPlayer();
+                    if(!_patrolling)
+                        StartCoroutine(Patrol());
+                    break;
+                case State.Alert:
+                    if (!_alerted)
                         StartCoroutine("Alert");
-					break;
-				case State.Investigate:
-                    if(!_investigating)
+                    break;
+                case State.Investigate:
+                    if (!_investigating)
                         StartCoroutine("Investigate");
-					break;
-				case State.Chase:
+                    break;
+                case State.Chase:
                     if (!_chasing)
                         StartCoroutine("Chase");
-					break;
-			}
-		}
+                    break;
+            }
+        }
 
-		private IEnumerator Patrol()
-		{
-			print("Patrolling");
-			_patrolling = true;
+        private IEnumerator Patrol()
+        {
+            _patrolling = true;
+            print("Patrolling");
+            //SetAlertInactive();
 
-            SetAlertInactive();
+            // Goto first waypoint
+            _gridAgent.SetSpeed(PatrolSpeed);
+            _gridAgent.SetDestination(transform.position, Waypoints[0].transform.position);
 
-			while (state == State.Patrol)
-			{
-                _gridAgent.SetSpeed(PatrolSpeed);
-
-                if (Vector3.Distance(transform.position, Waypoints[_waypointIndex].transform.position) <= StoppingDistance)
-                {
-                    //_gridAgent.StopMoving();
-                    yield return StartCoroutine(LookForPlayer(PatrolWaitTime));
+		    while (state == State.Patrol)
+		    {
+                // Ensure has reached current waypoints destination
+		        if (_gridAgent.HasPathFinished())
+		        {
+                    // Calculate next waypoint
                     if (RandomWaypoints)
-                    {
-                        _waypointIndex = Random.Range(0, Waypoints.Length);
-                    }
-                    else
-                    {
-                        _waypointIndex += 1;
-                        if (_waypointIndex >= Waypoints.Length)
-                        {
-                            _waypointIndex = 0;
-                        }
-                    }
+		                _waypointIndex = Random.Range(0, Waypoints.Length);
+		            else
+		            {
+		                _waypointIndex += 1;
+		                if (_waypointIndex >= Waypoints.Length)
+		                    _waypointIndex = 0;
+		            }
+
+                    // Setting the destination to next waypoint
+                    _gridAgent.SetDestination(transform.position, Waypoints[_waypointIndex].transform.position);
+
+                    // Stop the guard for PatrolWaitTime amount of time
+		            _gridAgent.StopMoving();
+		            yield return StartCoroutine(LookForPlayer(PatrolWaitTime));
+
+                    // Continue patrolling at PatrolSpeed
+                    _gridAgent.SetSpeed(PatrolSpeed);
                 }
-                _gridAgent.SetDestination(transform.position, Waypoints[_waypointIndex].transform.position);
-				yield return null;
-			}
-			_patrolling = false;
-		}
+		        yield return null;
+		    }
+            _patrolling = false;
+        }
 
         private IEnumerator Alert(){
             print("Alerted");
@@ -293,18 +299,24 @@ namespace Assets.Scripts
             return _FOV.visibleTargets.Count > 0;
         }
 
-		private IEnumerator LookForPlayer(float waitTime)
+		/// <summary>
+        /// LookForPlayer:
+        /// LookForPlayer is a method which adds the functionality of new WaitForSeconds, but with improved SpotPlayer();
+        /// method call to ensure that the guard can see the player while the guard is waiting.
+        /// </summary>
+        /// <param name="waitTime"></param>
+        /// <returns></returns>
+        private IEnumerator LookForPlayer(float waitTime)
 		{
 			timer = 0;
 
 			while (timer <= waitTime)
 			{
                 SpotPlayer();
-
 				timer += Time.deltaTime;
-				yield return null;
-			}
-		}
+			    yield return null;
+            }
+        }
 
         private IEnumerator SearchForPlayer(float waitTime) {
             timer = 0;
@@ -381,6 +393,17 @@ namespace Assets.Scripts
 
                 Gizmos.DrawLine(previousPosition, startPosition);
             }
+        }
+
+        private bool DestinationReached(Vector3 currentPos, Vector3 targetPos)
+        {
+            var currentNode = _grid.GetNodeFromWorldPoint(currentPos);
+            var targetNode = _grid.GetNodeFromWorldPoint(targetPos);
+
+            if (currentNode != targetNode) return false;
+
+            print("Position Reached");
+            return true;
         }
 
     }

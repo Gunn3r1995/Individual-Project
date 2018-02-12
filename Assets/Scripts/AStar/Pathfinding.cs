@@ -7,27 +7,20 @@ namespace Assets.Scripts.AStar
 {
     public class Pathfinding : MonoBehaviour
     {
-        private PathRequestManager requestManager;
         private Grid grid;
 
         private void Awake()
         {
             grid = GetComponent<Grid>();
-            requestManager = GetComponent<PathRequestManager>();
         }
 
-        public void StartFindPath(Vector3 startPos, Vector3 targetPos)
-        {
-            StartCoroutine(FindPath(startPos, targetPos));
-        }
-
-        IEnumerator FindPath(Vector3 startPos, Vector3 targetPos)
+        public void FindPath(PathRequest request, Action<PathResult> callback)
         {
             Vector3[] waypoints = new Vector3[0];
             bool pathSuccess = false;
 
-            Node startNode = grid.GetNodeFromWorldPoint(startPos);
-            Node targetNode = grid.GetNodeFromWorldPoint(targetPos);
+            Node startNode = grid.GetNodeFromWorldPoint(request.pathStart);
+            Node targetNode = grid.GetNodeFromWorldPoint(request.pathEnd);
 
             if (startNode == targetNode)
             {
@@ -76,12 +69,14 @@ namespace Assets.Scripts.AStar
                     }
                 }
             }
-            yield return null;
+
             if (pathSuccess)
             {
                 waypoints = RetracePath(startNode, targetNode);
+                pathSuccess = waypoints.Length > 0;
             }
-            requestManager.FinishedProcessingPath(waypoints, pathSuccess);
+            
+            callback(new PathResult(waypoints, pathSuccess, request.callback));
         }
 
         private Vector3[] RetracePath(Node startNode, Node targetNode)
