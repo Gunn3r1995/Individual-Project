@@ -28,6 +28,7 @@ namespace Assets.Scripts.AStar
 
         public void SetDestination(Vector3 currentPosition, Vector3 targetPosition)
         {
+            _pathFinished = false;
             PathRequestManager.RequestPath(new PathRequest(currentPosition, targetPosition, this.OnPathFound));
         }
 
@@ -39,7 +40,6 @@ namespace Assets.Scripts.AStar
                 return;
             }
 
-            _pathFinished = false;
             _path = newPath;
             StopCoroutine(FollowPath());
             StartCoroutine(FollowPath());
@@ -54,6 +54,12 @@ namespace Assets.Scripts.AStar
         public void StopMoving(bool crouch, bool jump){
             SetSpeed(0);
             _character.Move(Vector3.zero, crouch, jump);
+        }
+
+        public void ClearPath()
+        {
+            _pathFinished = true;
+            StopCoroutine("FollowPath");
         }
 
         private IEnumerator FollowPath()

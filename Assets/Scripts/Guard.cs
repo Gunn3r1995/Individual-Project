@@ -68,7 +68,7 @@ namespace Assets.Scripts
 
 		void Start()
         {
-            _FOV = FindObjectOfType<FieldOfView>();
+            _FOV = GetComponent<FieldOfView>();
             _audioSource = FindObjectOfType<AudioSource>();
             _grid = FindObjectOfType<AStar.Grid>();
             _gridAgent = GetComponent<GridAgent>();
@@ -159,31 +159,31 @@ namespace Assets.Scripts
         private IEnumerator Alert(){
             print("Alerted");
             _alerted = true;
+            _gridAgent.StopMoving();
 
-
-			if (CanSeePlayer())
+            if (CanSeePlayer())
 				AlertSpot = Player.transform.position;
             
             transform.LookAt(AlertSpot);
-            _gridAgent.StopMoving();
 
             yield return new WaitForSeconds(AlertReactionTime);
 
-            while(state == State.Alert) {
+            _gridAgent.SetSpeed(InvestigateSpeed);
+            _gridAgent.SetDestination(transform.position, AlertSpot);
+            
+
+           
+ 
+            while (state == State.Alert) {
 				if (CanSeePlayer())
 					state = State.Chase;
                 
-                _gridAgent.StopMoving();
-                if (Vector3.Distance(transform.position, AlertSpot) <= 2.0f)
+                if (_gridAgent.HasPathFinished())
 				{
-                    yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
-                    state = State.Investigate;
-                    break;
-                }
-
-				_gridAgent.SetSpeed(InvestigateSpeed);
-				_gridAgent.SetDestination(transform.position, AlertSpot);
-
+                    //_gridAgent.StopMoving();
+                    //yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
+				    state = State.Investigate;
+				}
 				yield return null;
             }
             _alerted = false;
@@ -194,25 +194,31 @@ namespace Assets.Scripts
             _investigating = true;
 
             var lastPos = new Vector3(0, 0, 0);
-
             Vector3 targetPosition = CreateRandomWalkablePosition(AlertSpot, WanderRadius, ref lastPos);
 
+            _gridAgent.SetSpeed(InvestigateSpeed);
+            _gridAgent.SetDestination(transform.position, targetPosition);
+            
             while(state == State.Investigate){
 				timer += Time.deltaTime;
 
 				if (CanSeePlayer())
 					state = State.Chase;
-                
-                _gridAgent.StopMoving();
-                if (Vector3.Distance(transform.position, targetPosition) <= 2.0f) {
-                    yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
-                    yield return new WaitForSeconds(InvestigateSpotTime);
-                    timer += InvestigateSpotTime;
-                    targetPosition = CreateRandomWalkablePosition(AlertSpot, WanderRadius, ref lastPos);	
-                }
 
-				_gridAgent.SetSpeed(InvestigateSpeed);
-				_gridAgent.SetDestination(transform.position, targetPosition);
+                if (_gridAgent.HasPathFinished())
+                {
+                    print("Investigate path found");
+                    targetPosition = CreateRandomWalkablePosition(AlertSpot, WanderRadius, ref lastPos);
+
+                    _gridAgent.SetDestination(transform.position, targetPosition);
+
+                    _gridAgent.StopMoving();
+                    yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
+                    timer += InvestigateSpotTime;
+
+                    print("Investigate path started");
+                    _gridAgent.SetSpeed(InvestigateSpeed);
+                }
 
                 if (timer >= InvestigateTime){
                     state = State.Patrol;
@@ -253,8 +259,7 @@ namespace Assets.Scripts
         }
 
         private void SpotPlayer() {
-            if (_FOV == null) { return; }
-            if(_FOV.visibleTargets.Count > 0) {
+            if(_FOV.VisibleTargets.Count > 0) {
                 playerVisibleTimer += Time.deltaTime;
 
 			} else  {
@@ -276,7 +281,6 @@ namespace Assets.Scripts
 				child.GetComponent<Renderer>().material.color = Color.Lerp(Color.white, Color.red, playerVisibleTimer / timeToSpotPlayer);
 			}
 
-
             if(playerVisibleTimer >=  timeToSpotPlayer/3) {
                 AlertGroup01.gameObject.SetActive(true);
                 AlertGroup01.gameObject.SetActive(true);
@@ -296,7 +300,7 @@ namespace Assets.Scripts
 
 		bool CanSeePlayer()
 		{
-            return _FOV.visibleTargets.Count > 0;
+            return _FOV.VisibleTargets.Count > 0;
         }
 
 		/// <summary>

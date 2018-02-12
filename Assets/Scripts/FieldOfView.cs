@@ -15,7 +15,7 @@ namespace Assets.Scripts
         public LayerMask obstacleMask;
 
         [HideInInspector]
-        public List<Transform> visibleTargets = new List<Transform>();
+        public List<Transform> VisibleTargets = new List<Transform>();
 
         private void Start()
         {
@@ -33,7 +33,7 @@ namespace Assets.Scripts
 
         void FindVisibleTargets()
         {
-            visibleTargets.Clear();
+            VisibleTargets.Clear();
 
             Collider[] targetsInViewRadius = Physics.OverlapSphere(transform.position, ViewRadius, targetMask);
 
@@ -49,7 +49,7 @@ namespace Assets.Scripts
 
                     if (!Physics.Raycast(transform.position, directionToTarget, dstToTarget, obstacleMask))
                     {
-                        visibleTargets.Add(target);
+                        VisibleTargets.Add(target);
                     }
                 }
             }
