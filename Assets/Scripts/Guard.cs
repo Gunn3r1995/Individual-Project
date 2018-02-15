@@ -309,7 +309,7 @@ namespace Assets.Scripts
             } else { AlertGroup03.gameObject.SetActive(false); }
         }
 
-		bool CanSeePlayer()
+		public bool CanSeePlayer()
 		{
             return _FOV.VisibleTargets.Count > 0;
         }
