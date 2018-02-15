@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿﻿using System.Collections;
 using System.Linq;
 using Assets.Scripts.AStar;
 using UnityEngine;
@@ -64,8 +64,6 @@ namespace Assets.Scripts
 
         #endregion
 
-        float timer = 0.0f;
-
 		void Start()
         {
             _FOV = GetComponent<FieldOfView>();
@@ -103,15 +101,15 @@ namespace Assets.Scripts
                     break;
                 case State.Alert:
                     if (!_alerted)
-                        StartCoroutine("Alert");
+                        StartCoroutine(Alert());
                     break;
                 case State.Investigate:
                     if (!_investigating)
-                        StartCoroutine("Investigate");
+                        StartCoroutine(Investigate());
                     break;
                 case State.Chase:
                     if (!_chasing)
-                        StartCoroutine("Chase");
+                        StartCoroutine(Chase());
                     break;
             }
         }
@@ -128,6 +126,7 @@ namespace Assets.Scripts
 
 		    while (state == State.Patrol)
 		    {
+                //print("Patrol Continue");
                 // Ensure has reached current waypoints destination
 		        if (_gridAgent.HasPathFinished())
 		        {
@@ -159,34 +158,46 @@ namespace Assets.Scripts
         private IEnumerator Alert(){
             print("Alerted");
             _alerted = true;
+
             _gridAgent.StopMoving();
 
-            if (CanSeePlayer())
-				AlertSpot = Player.transform.position;
-            
-            transform.LookAt(AlertSpot);
 
+            AlertSpot = Player.transform.position;
+            print(AlertSpot);
+
+            transform.LookAt(AlertSpot);
+			_gridAgent.SetDestination(transform.position, AlertSpot);
+
+            _gridAgent.StopMoving();
             yield return new WaitForSeconds(AlertReactionTime);
 
-            _gridAgent.SetSpeed(InvestigateSpeed);
-            _gridAgent.SetDestination(transform.position, AlertSpot);
-            
-
-           
- 
             while (state == State.Alert) {
-				if (CanSeePlayer())
-					state = State.Chase;
-                
+                if(_gridAgent.PathFound()) {
+					_gridAgent.SetSpeed(InvestigateSpeed);
+                }
+
                 if (_gridAgent.HasPathFinished())
-				{
-                    //_gridAgent.StopMoving();
-                    //yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
-				    state = State.Investigate;
-				}
-				yield return null;
+                {
+                    // On Alert Destination Reached
+
+					// Work around to force stop the agent
+                    _gridAgent.SetDestination(transform.position, CreateRandomWalkablePosition(transform.position, 5.0f, _grid));
+					_gridAgent.StopMoving();
+
+                    // Wait for 'InvestigateSpotTime' amount while looking for the player
+					yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
+					state = State.Investigate;
+
+					yield break;
+                }
+
+                if (CanSeePlayer())
+                	state = State.Chase;
+
+               yield return null;
             }
-            _alerted = false;
+
+			_alerted = false;
         }
 
         private IEnumerator Investigate(){
@@ -194,12 +205,14 @@ namespace Assets.Scripts
             _investigating = true;
 
             var lastPos = new Vector3(0, 0, 0);
-            Vector3 targetPosition = CreateRandomWalkablePosition(AlertSpot, WanderRadius, ref lastPos);
+            Vector3 targetPosition = CreateRandomWalkablePosition(AlertSpot, WanderRadius, ref lastPos, _grid);
 
             _gridAgent.SetSpeed(InvestigateSpeed);
             _gridAgent.SetDestination(transform.position, targetPosition);
-            
-            while(state == State.Investigate){
+
+			float timer = 0.0f;
+
+			while(state == State.Investigate){
 				timer += Time.deltaTime;
 
 				if (CanSeePlayer())
@@ -207,16 +220,14 @@ namespace Assets.Scripts
 
                 if (_gridAgent.HasPathFinished())
                 {
-                    print("Investigate path found");
                     targetPosition = CreateRandomWalkablePosition(AlertSpot, WanderRadius, ref lastPos);
 
                     _gridAgent.SetDestination(transform.position, targetPosition);
-
                     _gridAgent.StopMoving();
+
                     yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
                     timer += InvestigateSpotTime;
 
-                    print("Investigate path started");
                     _gridAgent.SetSpeed(InvestigateSpeed);
                 }
 
@@ -312,7 +323,7 @@ namespace Assets.Scripts
         /// <returns></returns>
         private IEnumerator LookForPlayer(float waitTime)
 		{
-			timer = 0;
+            float timer = 0;
 
 			while (timer <= waitTime)
 			{
@@ -323,7 +334,7 @@ namespace Assets.Scripts
         }
 
         private IEnumerator SearchForPlayer(float waitTime) {
-            timer = 0;
+            float timer = 0;
 
             while(timer <= waitTime) {
 				if (CanSeePlayer())
@@ -334,7 +345,34 @@ namespace Assets.Scripts
             }
         }
 
-		private Vector3 CreateRandomWalkablePosition(Vector3 origin, float dist, ref Vector3 lastPos, AStar.Grid grid = null)
+		private static Vector3 CreateRandomWalkablePosition(Vector3 origin, float dist, AStar.Grid grid = null)
+		{
+			if (grid == null)
+			{
+				grid = FindObjectOfType<AStar.Grid>();
+			}
+
+			if (grid != null)
+			{
+				Vector3 randomPosition = CreateRandomPosition(origin, dist);
+
+				Node newPositionNode = grid.GetNodeFromWorldPoint(randomPosition);
+				while (!newPositionNode.walkable)
+				{
+					randomPosition = CreateRandomPosition(origin, dist);
+					newPositionNode = grid.GetNodeFromWorldPoint(randomPosition);
+				}
+				return randomPosition;
+			}
+			else
+			{
+				Debug.LogError("Grid doesn't exist");
+				return new Vector3();
+			}
+
+		}
+
+		private static Vector3 CreateRandomWalkablePosition(Vector3 origin, float dist, ref Vector3 lastPos, AStar.Grid grid = null)
 		{
 			if (grid == null)
 			{

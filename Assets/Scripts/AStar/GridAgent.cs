@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections;
 using UnityEngine;
 using UnityStandardAssets.Characters.ThirdPerson;
@@ -11,11 +11,15 @@ namespace Assets.Scripts.AStar
         private float _speed;
         private int _targetIndex = 0;
         private ThirdPersonCharacter _character;
+        private Rigidbody _rigidbody;
         private bool _pathFinished;
+        private bool _following;
+        Coroutine lastRoutine = null;
 
         private void Awake()
         {
             _character = GetComponent<ThirdPersonCharacter>();
+            _rigidbody = GetComponent<Rigidbody>();
         }
 
         public float GetSpeed() {
@@ -32,8 +36,16 @@ namespace Assets.Scripts.AStar
             PathRequestManager.RequestPath(new PathRequest(currentPosition, targetPosition, this.OnPathFound));
         }
 
+        public bool PathFound() {
+            if(_path != null && _path.Length > 0) {
+                return true;
+            }
+            return false;
+        }
+
         public void OnPathFound(Vector3[] newPath, bool pathSuccessful)
         {
+            print("Path Found");
             if (!pathSuccessful)
             {
                 _pathFinished = true;
@@ -41,8 +53,10 @@ namespace Assets.Scripts.AStar
             }
 
             _path = newPath;
-            StopCoroutine(FollowPath());
-            StartCoroutine(FollowPath());
+            if (lastRoutine != null)
+                StopAllCoroutines();
+ 
+            lastRoutine = StartCoroutine("FollowPath");
         }
 
 		public void StopMoving()
@@ -56,14 +70,15 @@ namespace Assets.Scripts.AStar
             _character.Move(Vector3.zero, crouch, jump);
         }
 
-        public void ClearPath()
-        {
-            _pathFinished = true;
-            StopCoroutine("FollowPath");
-        }
+        //public void ClearPath()
+        //{
+        //    _pathFinished = true;
+        //    _path = null;
+        //}
 
         private IEnumerator FollowPath()
         {
+            //_following = true;
             Vector3 currentWaypoint = _path[0];
 
             while (true)
@@ -73,19 +88,22 @@ namespace Assets.Scripts.AStar
                     _targetIndex++;
                     if (_targetIndex >= _path.Length)
                     {
-                        print("Destination Reached");
                         _pathFinished = true;
                         _targetIndex = 0;
-                        yield break;
+                        break;
                     }
                     currentWaypoint = _path[_targetIndex];
                 }
 
-                transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, _speed * Time.deltaTime);
-                _character.Move((currentWaypoint - transform.position).normalized * _speed, false, false);
+				transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, _speed * Time.deltaTime);
+				_character.Move((currentWaypoint - transform.position).normalized * _speed, false, false);
+  
                 yield return null;
             }
+            yield return null;
         }
+
+
 
         public bool HasPathFinished()
         {
