@@ -8,6 +8,7 @@ TagManager:
   - Fire
   - Door
   - Guard
+  - concrete
   layers:
   - Default
   - TransparentFX

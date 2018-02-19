@@ -11,15 +11,16 @@ namespace Assets.Scripts
         [Range(0, 360)]
         public float ViewAngle;
 
-        public LayerMask targetMask;
-        public LayerMask obstacleMask;
+        public LayerMask PlayerMask;
+        public LayerMask ObstacleMask;
+        public float LookDelay = 0.2f;
 
         [HideInInspector]
         public List<Transform> VisibleTargets = new List<Transform>();
 
         private void Start()
         {
-            StartCoroutine("FindTargetsWithDelay", .2f);
+            StartCoroutine(FindTargetsWithDelay(LookDelay));
         }
 
         IEnumerator FindTargetsWithDelay(float delay)
@@ -35,24 +36,29 @@ namespace Assets.Scripts
         {
             VisibleTargets.Clear();
 
-            Collider[] targetsInViewRadius = Physics.OverlapSphere(transform.position, ViewRadius, targetMask);
+            // Find targets within sphere radius
+            VisibleTargets.AddRange(LocateTargetsWithinSphere(Physics.OverlapSphere(transform.position, ViewRadius, PlayerMask)));
+        }
 
-            for (int i = 0; i < targetsInViewRadius.Length; i++)
-            {
-                Transform target = targetsInViewRadius[i].transform;
-                Vector3 directionToTarget = (target.position - transform.position).normalized;
-                //View Angle Check
-                if (Vector3.Angle(transform.forward, directionToTarget) < ViewAngle / 2)
-                {
-                    //Obstacle Check
-                    float dstToTarget = Vector3.Distance(transform.position, target.position);
+        private List<Transform> LocateTargetsWithinSphere(Collider[] targetsWithinSphere) {
+            List<Transform> list = new List<Transform>();
 
-                    if (!Physics.Raycast(transform.position, directionToTarget, dstToTarget, obstacleMask))
-                    {
-                        VisibleTargets.Add(target);
+            foreach(Collider targetCollider in targetsWithinSphere) {
+                // Get the target transform
+                var directionToTarget = (targetCollider.transform.position - transform.position).normalized;
+                var angleToTarget = Vector3.Angle(transform.forward, directionToTarget);
+                var distanceToTarget = Vector3.Distance(transform.position, targetCollider.transform.position);
+
+                // Check within View Angle
+                if(angleToTarget < ViewAngle/2) {
+                    // Ensure no obstacles blocking the view using raycast
+                    if(!Physics.Raycast(transform.position, directionToTarget, distanceToTarget, ObstacleMask)) {
+                        list.Add(targetCollider.transform);
                     }
                 }
             }
+
+            return list;
         }
 
         public Vector3 DirFromAngle(float angleInDegrees, bool angleIsGlobal)

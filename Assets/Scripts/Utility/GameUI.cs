@@ -9,7 +9,6 @@ namespace Assets.Scripts
         public GameObject gameWinUI;
         bool gameIsOver;
 
-        // Use this for initialization
         void Start()
         {
             Guard.OnGuardCaughtPlayer += ShowGameLoseUI;

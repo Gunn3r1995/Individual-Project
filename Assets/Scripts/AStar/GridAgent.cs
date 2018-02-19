@@ -65,17 +65,6 @@ namespace Assets.Scripts.AStar
             _character.Move(Vector3.zero, false, false);
 		}
 
-        public void StopMoving(bool crouch, bool jump){
-            SetSpeed(0);
-            _character.Move(Vector3.zero, crouch, jump);
-        }
-
-        //public void ClearPath()
-        //{
-        //    _pathFinished = true;
-        //    _path = null;
-        //}
-
         private IEnumerator FollowPath()
         {
             //_following = true;
@@ -103,7 +92,10 @@ namespace Assets.Scripts.AStar
             yield return null;
         }
 
-
+        public void StraightToDestination(Vector3 target) {
+            transform.position = Vector3.MoveTowards(transform.position, target, _speed * Time.deltaTime);
+            _character.Move((target - transform.position).normalized * _speed, false, false);
+        }
 
         public bool HasPathFinished()
         {

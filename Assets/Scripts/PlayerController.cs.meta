@@ -1,11 +1,15 @@
 fileFormatVersion: 2
 guid: df85d0c792f42d843af29b5aa5487e7b
-timeCreated: 1516797913
+timeCreated: 1518775351
 licenseType: Free
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - GuardAlertedTexture: {fileID: 2800000, guid: c9c42e365b5d0452592210696539ce88,
+      type: 3}
+  - GuardAlertedTextureRed: {fileID: 2800000, guid: 918048f14cec246f28185330e25ebbc1,
+      type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

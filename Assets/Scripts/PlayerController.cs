@@ -1,130 +1,56 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityStandardAssets.Characters.ThirdPerson;
 
 namespace Assets.Scripts
 {
     public class PlayerController : MonoBehaviour
     {
-        public System.Action OnAlerted;
+        #region Variables
         public System.Action OnReachedEndOfLevel;
-        public Texture GuardAlertedTexture;
-        public Texture GuardAlertedTextureRed;
-        //bool disabled;
 
-        private Camera _camera;
-        private GameObject[] guards;
-        public Vector2 size = new Vector2(50, 50);
+        public GameObject alert;
+        public float RotationSpeed;
 
-		public float angle = 45;
+        private List<GuardAlert> guardsAlerts;
+
+        private Rigidbody _rigidbody;
+
+        private bool _isDisabled = false;
+        #endregion
 
         void Start()
         {
-            //Guard.OnGuardApprehendingPlayer += Disable;
-            if (GuardAlertedTexture == null) {
-                GuardAlertedTexture = new Texture();
+            // Add Disable method call to OnGuardCaughtPlayer action
+            Guard.OnGuardCaughtPlayer += Disable;
+
+			// Get all guard game objects and other assets
+			guardsAlerts = new List<GuardAlert>();
+            foreach (GameObject guard in GameObject.FindGameObjectsWithTag("Guard"))
+            {
+                guardsAlerts.Add(
+                    new GuardAlert(guard, 
+                                   Instantiate(alert, transform.position + -(Vector3.forward)/2, transform.rotation, transform.parent), 
+                                   alert.GetComponent<Renderer>().sharedMaterial.color));
             }
-
-            guards = GameObject.FindGameObjectsWithTag("Guard");
-            _camera = FindObjectOfType<Camera>();
-
+            _rigidbody = GetComponent<Rigidbody>();
         }
 
         private void Update()
         {
-            
-        }
+            // If disabled stop the player moving
+            _rigidbody.isKinematic |= _isDisabled;
 
-        private void OnGUI()
-        {
-
-            foreach (var guard in guards)
-            {
-                var state = guard.GetComponent<Guard>().state;
-                    //Vector3 direction = (transform.position - guard.transform.position).normalized;
-
-                Vector3 guardScreenPoint = _camera.WorldToViewportPoint(guard.transform.position).normalized;
-                //guardScreenPoint.y = 0;
-
-
-                Vector2 centre = new Vector3(Screen.width / 2, Screen.height / 2);
-                //print("Centre: " + centre);
-
-                bool isForwards = false;
-                bool isBackwards = false;
-                bool isLeft = false;
-                bool isRight = false;
-
-                float forwardAngle = Vector3.Angle(_camera.transform.forward, (guard.transform.position - _camera.transform.position));
-                float rightAngle = Vector3.Angle(_camera.transform.right, (guard.transform.position - _camera.transform.position));
-
-                isForwards |= forwardAngle < 90;
-                isBackwards |= forwardAngle > 90;
-                isRight |= rightAngle < 90;
-                isLeft |= rightAngle > 90;
-
-                Vector2 guardScreenPos;
-                if (isForwards && isLeft)
-                {
-                    // Top Left
-                    guardScreenPos = new Vector2(guardScreenPoint.x, -guardScreenPoint.z).normalized;
-                }
-                else if (isForwards && isRight)
-                {
-                    // Top Right
-                    guardScreenPos = new Vector2(guardScreenPoint.x, -guardScreenPoint.z).normalized;
-                }
-                else if (isBackwards && isLeft)
-                {
-                    // Bottom Left
-                    guardScreenPos = new Vector2(-guardScreenPoint.x, -guardScreenPoint.z).normalized;
-                }
-                else if (isBackwards && isRight)
-                {
-                    // Bottom Right
-                    guardScreenPos = new Vector2(-guardScreenPoint.x, -guardScreenPoint.z).normalized;
-                }
-                else
-                {
-                    guardScreenPos = new Vector2(guardScreenPoint.x, -guardScreenPoint.z).normalized;
-                }
-
-                Vector2 pos = centre + guardScreenPos * 250;
-
-                Vector2 pivot = new Vector2(pos.x + (size.x / 2), pos.y + (size.y / 2));
-
-                if (isForwards && isLeft)
-                {
-                    GUIUtility.RotateAroundPivot((forwardAngle + -rightAngle) / 2, pivot);
-                }
-                else if (isForwards && isRight)
-                {
-                    GUIUtility.RotateAroundPivot((forwardAngle + rightAngle) / 2, pivot);
-                }
-                else if (isBackwards && isLeft)
-                {
-                    GUIUtility.RotateAroundPivot((-forwardAngle + -rightAngle) / 2, pivot);
-                }
-                else if (isBackwards && isRight)
-                {
-                    GUIUtility.RotateAroundPivot((forwardAngle + rightAngle) / 2, pivot);
-                }
-
-                if(state == Guard.State.Patrol && guard.GetComponent<Guard>().CanSeePlayer()) {
-					GUI.DrawTexture(new Rect(pos, size), GuardAlertedTexture);
-                } else if (state == Guard.State.Alert || state == Guard.State.Investigate || state == Guard.State.Chase)
-                {
-                    //Change to Red
-                    GUI.DrawTexture(new Rect(pos, size), GuardAlertedTextureRed);
-                }
-
-            }
+            DrawAlertArrows();
         }
 
         private void OnTriggerEnter(Collider collider)
         {
-            if (collider.tag == "Finish") {
-                //Disable();
+            // If collider tag is finish then disable player and level Win UI
+            if (collider.tag == "Finish")
+            {
+                Disable();
                 if (OnReachedEndOfLevel != null)
                 {
                     OnReachedEndOfLevel();
@@ -132,16 +58,71 @@ namespace Assets.Scripts
             }
         }
 
+		void Disable()
+		{
+			// Disables player when the OnGuardCaughtPlayer action is called from guard script
+			_isDisabled = true;
+		}
+
         private void OnDestroy()
         {
-            //Guard.OnGuardApprehendingPlayer -= Disable;
+            // Remove disabled 
+            Guard.OnGuardCaughtPlayer -= Disable;
         }
 
-        /*
-        void Disable()
-        {
-            disabled = true;
-        }
-        */
+		private void DrawAlertArrows()
+		{
+			foreach (GuardAlert guardAlert in guardsAlerts)
+			{
+				var guard = guardAlert.guard.GetComponent<Guard>();
+
+				if (guard.state == Guard.State.Patrol && guard.CanSeePlayer() || guard.state == Guard.State.Investigate)
+				{
+					// Calculate Rotation and Direction
+					CalculateArrowDirection(guardAlert.guard, guardAlert.alert);
+
+					// Colour
+					guardAlert.alert.GetComponent<Renderer>().material.color = Color.black;
+				}
+				else if (guard.state == Guard.State.Alert || guard.state == Guard.State.Chase)
+				{
+					// Calculate Rotation and Direction
+					CalculateArrowDirection(guardAlert.guard, guardAlert.alert);
+
+					// Colour
+					guardAlert.alert.GetComponent<Renderer>().material.color = Color.red;
+				}
+				else
+				{
+					guardAlert.alert.SetActive(false);
+				}
+			}
+		}
+
+		private void CalculateArrowDirection(GameObject guard, GameObject alertObj)
+		{
+			alertObj.SetActive(true);
+
+			var direction = (guard.transform.position - transform.position).normalized;
+			var targetRotation = Quaternion.LookRotation(guard.transform.position - transform.position);
+
+            // Rotate and position alert to the guard
+			alertObj.transform.rotation = Quaternion.Lerp(alertObj.transform.rotation, targetRotation, RotationSpeed * Time.deltaTime);
+			alertObj.transform.position = transform.position + direction;
+		}
     }
+}
+
+public struct GuardAlert
+{
+	public GameObject guard;
+	public GameObject alert;
+    public Color originalColor;
+
+    public GuardAlert(GameObject guard, GameObject alert, Color originalColor)
+	{
+		this.guard = guard;
+		this.alert = alert;
+        this.originalColor = originalColor;
+	}
 }

@@ -31,16 +31,15 @@ namespace Assets.Scripts
 		public bool RandomWaypoints;
 		public float PatrolSpeed = 0.75f;
         public float PatrolWaitTime = 3.0f;
-        public float StoppingDistance = 2.0f;
 
 		private int _waypointIndex;
 		private bool _patrolling;
         #endregion
 
         #region Alert
-        public Transform AlertGroup01;
-        public Transform AlertGroup02;
-        public Transform AlertGroup03;
+        //public Transform AlertGroup01;
+        //public Transform AlertGroup02;
+        //public Transform AlertGroup03;
 
 		public float AlertReactionTime = 2.0f;
 
@@ -59,6 +58,7 @@ namespace Assets.Scripts
 
 		#region Chase
 		public float ChaseSpeed = 2.0f;
+        public float ChaseTime = 20.0f;
 		private bool _chasing;
         #endregion
 
@@ -77,7 +77,6 @@ namespace Assets.Scripts
             if (RandomWaypoints)
                 _waypointIndex = Random.Range(0, Waypoints.Length);
 
-            SetAlertInactive();
             state = State.Patrol;
         }
 
@@ -118,7 +117,6 @@ namespace Assets.Scripts
         {
             _patrolling = true;
             print("Patrolling");
-            //SetAlertInactive();
 
             // Goto first waypoint
             _gridAgent.SetSpeed(PatrolSpeed);
@@ -126,7 +124,6 @@ namespace Assets.Scripts
 
 		    while (state == State.Patrol)
 		    {
-                //print("Patrol Continue");
                 // Ensure has reached current waypoints destination
 		        if (_gridAgent.HasPathFinished())
 		        {
@@ -159,22 +156,20 @@ namespace Assets.Scripts
             print("Alerted");
             _alerted = true;
 
-            _gridAgent.StopMoving();
-
-
+            // Set alert spot to players location
             AlertSpot = Player.transform.position;
-            print(AlertSpot);
 
+            // Set the destination to the alert spot
             transform.LookAt(AlertSpot);
 			_gridAgent.SetDestination(transform.position, AlertSpot);
 
+            // Stop moving and wait for 'AlertReactionTime' amount
             _gridAgent.StopMoving();
             yield return new WaitForSeconds(AlertReactionTime);
 
             while (state == State.Alert) {
-                if(_gridAgent.PathFound()) {
-					_gridAgent.SetSpeed(InvestigateSpeed);
-                }
+				print("Alerted");
+				_gridAgent.SetSpeed(InvestigateSpeed);
 
                 if (_gridAgent.HasPathFinished())
                 {
@@ -188,80 +183,110 @@ namespace Assets.Scripts
 					yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
 					state = State.Investigate;
 
-					yield break;
+					break;
                 }
 
+                // If can se player while alerted go straight to chase
                 if (CanSeePlayer())
-                	state = State.Chase;
+                    state = State.Chase;
 
                yield return null;
             }
-
+            print("Finished Alert");
 			_alerted = false;
         }
 
         private IEnumerator Investigate(){
             print("Investigating");
             _investigating = true;
+			float timer = 0.0f;
 
-            var lastPos = new Vector3(0, 0, 0);
+            Vector3 lastPos = new Vector3(0, 0, 0);
+            // Generate first waypoint and save the position
             Vector3 targetPosition = CreateRandomWalkablePosition(AlertSpot, WanderRadius, ref lastPos, _grid);
 
+            // Go to first waypoint
             _gridAgent.SetSpeed(InvestigateSpeed);
             _gridAgent.SetDestination(transform.position, targetPosition);
 
-			float timer = 0.0f;
-
-			while(state == State.Investigate){
+			while(state == State.Investigate) {
+                // Add to time
 				timer += Time.deltaTime;
 
+				// If can se player while investigating go straight to chase
 				if (CanSeePlayer())
 					state = State.Chase;
 
                 if (_gridAgent.HasPathFinished())
                 {
+                    // Guard reached waypoint
+                    // Create a new waypoint parsing in the last waypoint; by reference so that it keeps the 'lastPos' updated
                     targetPosition = CreateRandomWalkablePosition(AlertSpot, WanderRadius, ref lastPos);
 
+                    // Set the destination and stop moving work around
                     _gridAgent.SetDestination(transform.position, targetPosition);
                     _gridAgent.StopMoving();
 
+                    // Wait at waypoint for 'InvestigateSpotTime' amount
                     yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
+                    // Add the 'InvestigateSpotTime' amount to the timer
                     timer += InvestigateSpotTime;
 
+                    // Start walking to next waypoint
                     _gridAgent.SetSpeed(InvestigateSpeed);
                 }
 
                 if (timer >= InvestigateTime){
+                    // If investiage time reached go back to patrol
                     state = State.Patrol;
                     break;
                 }
 
                 yield return null;
             }
+            print("Finished Investiagting");
             _investigating = false;
         }
 
         private IEnumerator Chase()
         {
-            print("Chasing");
+            print("Chase");
             _chasing = true;
+
+            var timer = 0f;
+
+            Vector3 laspPos = Player.transform.position;
+			transform.LookAt(laspPos);
+			_gridAgent.SetDestination(transform.position, laspPos);
+			_gridAgent.SetSpeed(ChaseSpeed);
 
             while (state == State.Chase)
             {
-                _gridAgent.SetSpeed(ChaseSpeed);
+                timer += Time.deltaTime;
 
                 if (CanSeePlayer())
                 {
-                    transform.LookAt(Player.transform);
-                    _gridAgent.SetDestination(transform.position, Player.transform.position);
+                    laspPos = Player.transform.position;
+                    _gridAgent.StraightToDestination(Player.transform.position);
+                } else {
+                    _gridAgent.SetDestination(transform.position, laspPos);
+                }
 
-                    if (Vector3.Distance(transform.position, Player.transform.position) >= 2.0f)
+                if (Vector3.Distance(transform.position, Player.transform.position) <= 1.0f)
+                {
+                    if (OnGuardCaughtPlayer != null)
                     {
-                        if (OnGuardCaughtPlayer != null)
-                        {
-                            OnGuardCaughtPlayer();
-                        }
+                        OnGuardCaughtPlayer();
+                        _gridAgent.StopMoving();
                     }
+                } else if (Vector3.Distance(transform.position, Player.transform.position) >= 20f) {
+                    state = State.Investigate;
+                    break;
+                }
+
+                if(timer >= ChaseTime) {
+                    state = State.Investigate;
+                    break;
                 }
 
                 yield return null;
@@ -270,43 +295,12 @@ namespace Assets.Scripts
         }
 
         private void SpotPlayer() {
-            if(_FOV.VisibleTargets.Count > 0) {
-                playerVisibleTimer += Time.deltaTime;
+            if (_FOV.VisibleTargets.Count > 0) playerVisibleTimer += Time.deltaTime;
+            else playerVisibleTimer -= Time.deltaTime;
 
-			} else  {
-                playerVisibleTimer -= Time.deltaTime;
-            }
+            playerVisibleTimer = Mathf.Clamp(playerVisibleTimer, 0, timeToSpotPlayer);
 
-			playerVisibleTimer = Mathf.Clamp(playerVisibleTimer, 0, timeToSpotPlayer);
-
-            foreach(Transform child in AlertGroup01) {
-                child.GetComponent<Renderer>().material.color = Color.Lerp(Color.white, Color.red, playerVisibleTimer / timeToSpotPlayer);
-            }
-
-			foreach (Transform child in AlertGroup02)
-			{
-				child.GetComponent<Renderer>().material.color = Color.Lerp(Color.white, Color.red, playerVisibleTimer / timeToSpotPlayer);
-			}
-			foreach (Transform child in AlertGroup03)
-			{
-				child.GetComponent<Renderer>().material.color = Color.Lerp(Color.white, Color.red, playerVisibleTimer / timeToSpotPlayer);
-			}
-
-            if(playerVisibleTimer >=  timeToSpotPlayer/3) {
-                AlertGroup01.gameObject.SetActive(true);
-                AlertGroup01.gameObject.SetActive(true);
-                
-            } else { AlertGroup01.gameObject.SetActive(false);}
-
-            if  ( playerVisibleTimer >= (timeToSpotPlayer / 3) * 2) {
-                AlertGroup02.gameObject.SetActive(true);
-
-            } else { AlertGroup02.gameObject.SetActive(false); }
-
-            if (playerVisibleTimer >= timeToSpotPlayer) {
-                AlertGroup03.gameObject.SetActive(true);
-				state = State.Alert;
-            } else { AlertGroup03.gameObject.SetActive(false); }
+            if (playerVisibleTimer >= timeToSpotPlayer) state = State.Alert;
         }
 
 		public bool CanSeePlayer()
@@ -412,12 +406,6 @@ namespace Assets.Scripts
 
 			return randomPosition + origin;
 		}
-
-        private void SetAlertInactive() {
-            AlertGroup01.gameObject.SetActive(false);
-            AlertGroup02.gameObject.SetActive(false);
-            AlertGroup03.gameObject.SetActive(false);
-        }
 
 		public void OnDrawGizmos()
 		{
