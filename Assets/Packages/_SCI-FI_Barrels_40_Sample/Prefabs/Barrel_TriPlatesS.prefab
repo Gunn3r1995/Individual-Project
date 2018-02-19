@@ -22,7 +22,7 @@ GameObject:
   - component: {fileID: 33000013681980676}
   - component: {fileID: 23000010846125742}
   - component: {fileID: 64390305524947468}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Barrel_TriPlatesS
   m_TagString: Untagged
   m_Icon: {fileID: 0}
