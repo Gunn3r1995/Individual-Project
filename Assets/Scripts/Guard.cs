@@ -1,8 +1,7 @@
-﻿﻿using System.Collections;
+﻿using System.Collections;
 using System.Linq;
 using Assets.Scripts.AStar;
 using UnityEngine;
-using UnityStandardAssets.Characters.ThirdPerson;
 
 namespace Assets.Scripts
 {
