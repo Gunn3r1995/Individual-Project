@@ -7,6 +7,7 @@ namespace Assets.Scripts
 {
     public class Guard : MonoBehaviour
     {
+        TESTING ERROR
         #region Variables
         public static event System.Action OnGuardCaughtPlayer;
 
@@ -90,6 +91,7 @@ namespace Assets.Scripts
 
 		private void FSM()
 		{
+            TEST = print("YUMMY")
             switch (state)
             {
                 case State.Patrol:
