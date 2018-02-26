@@ -74587,6 +74587,7 @@ GameObject:
   - component: {fileID: 1107415630}
   - component: {fileID: 1107415629}
   - component: {fileID: 1107415628}
+  - component: {fileID: 1107415634}
   - component: {fileID: 1107415626}
   - component: {fileID: 1107415627}
   m_Layer: 0
@@ -74755,7 +74756,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Player: {fileID: 1501192958}
   AutoTargetPlayer: 0
-  state: 0
+  _guardUtil: {fileID: 0}
   timeToSpotPlayer: 1
   Waypoints:
   - {fileID: 1751317235}
@@ -74852,6 +74853,36 @@ Animator:
   m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
+--- !u!114 &1107415634
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1107415624}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 121d2ca3a9c3da143846f2e799f799c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Player: {fileID: 1501192958}
+  AutoTargetPlayer: 0
+  state: 0
+  timeToSpotPlayer: 0.5
+  Waypoints:
+  - {fileID: 1751317235}
+  - {fileID: 172515976}
+  - {fileID: 1864003832}
+  - {fileID: 1542518486}
+  RandomWaypoints: 0
+  PatrolSpeed: 0.75
+  PatrolWaitTime: 3
+  AlertReactionTime: 2
+  InvestigateSpeed: 1
+  InvestigateTime: 60
+  InvestigateSpotTime: 5
+  WanderRadius: 5
+  ChaseSpeed: 2
+  ChaseTime: 20
 --- !u!1 &1107964783
 GameObject:
   m_ObjectHideFlags: 0
@@ -120544,7 +120575,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1864003832}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.49, y: 0, z: 20.76}
+  m_LocalPosition: {x: 0.48999977, y: 0, z: 20.760002}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 880342896}

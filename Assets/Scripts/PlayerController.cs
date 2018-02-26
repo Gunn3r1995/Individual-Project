@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -21,7 +21,8 @@ namespace Assets.Scripts
         void Start()
         {
             // Add Disable method call to OnGuardCaughtPlayer action
-            Guard.OnGuardCaughtPlayer += Disable;
+            GuardUtil.OnGuardCaughtPlayer += Disable;
+            //GuardTrained.OnGuardCaughtPlayer += Disable;
 
 			// Get all guard game objects and other assets
 			guardsAlerts = new List<GuardAlert>();
@@ -64,33 +65,36 @@ namespace Assets.Scripts
 
         private void OnDestroy()
         {
-            // Remove disabled 
-            Guard.OnGuardCaughtPlayer -= Disable;
+            // Remove disabled
+            GuardUtil.OnGuardCaughtPlayer -= Disable;
+
+            //GuardTrained.OnGuardCaughtPlayer -= Disable;
         }
 
 		private void DrawAlertArrows()
 		{
 			foreach (GuardAlert guardAlert in guardsAlerts)
 			{
-				var guard = guardAlert.guard.GetComponent<Guard>();
+                //GET GUARD UTIL FROM GUARD AND GET STATE FROM THAT
+                var guardUtil = guardAlert.guard.GetComponent<GuardUtil>();
+                var state = guardUtil.state;
+                var guardCanSeePlayer = guardAlert.guard.GetComponent<FieldOfView>().VisibleTargets.Count > 0;
 
-				if (guard.state == Guard.State.Patrol && guard.CanSeePlayer() || guard.state == Guard.State.Investigate)
+                if (state == GuardUtil.State.Patrol && guardCanSeePlayer || state == GuardUtil.State.Investigate)
 				{
 					// Calculate Rotation and Direction
 					CalculateArrowDirection(guardAlert.guard, guardAlert.alert);
 
 					// Colour
 					guardAlert.alert.GetComponent<Renderer>().material.color = Color.black;
-				}
-				else if (guard.state == Guard.State.Alert || guard.state == Guard.State.Chase)
+				} else if (state == GuardUtil.State.Alert || state == GuardUtil.State.Chase)
 				{
 					// Calculate Rotation and Direction
 					CalculateArrowDirection(guardAlert.guard, guardAlert.alert);
 
 					// Colour
 					guardAlert.alert.GetComponent<Renderer>().material.color = Color.red;
-				}
-				else
+				} else
 				{
 					guardAlert.alert.SetActive(false);
 				}

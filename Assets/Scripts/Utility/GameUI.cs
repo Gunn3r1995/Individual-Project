@@ -10,7 +10,7 @@ namespace Assets.Scripts
 
         void Start()
         {
-            Guard.OnGuardCaughtPlayer += ShowGameLoseUI;
+            GuardUtil.OnGuardCaughtPlayer += ShowGameLoseUI;
             FindObjectOfType<PlayerController>().OnReachedEndOfLevel += ShowGameWinUI;
         }
 
@@ -41,7 +41,7 @@ namespace Assets.Scripts
             gameIsOver = true;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
-            Guard.OnGuardCaughtPlayer -= ShowGameLoseUI;
+            GuardUtil.OnGuardCaughtPlayer -= ShowGameLoseUI;
             FindObjectOfType<PlayerController>().OnReachedEndOfLevel -= ShowGameWinUI;
         }
 

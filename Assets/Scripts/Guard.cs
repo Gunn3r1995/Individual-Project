@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿﻿using System.Collections;
 using System.Linq;
 using Assets.Scripts.AStar;
 using UnityEngine;
@@ -8,17 +8,16 @@ namespace Assets.Scripts
     public class Guard : MonoBehaviour
     {
         #region Variables
-        public static event System.Action OnGuardCaughtPlayer;
-
         FieldOfView _FOV;
         private AudioSource _audioSource;
         public GameObject Player;
         public bool AutoTargetPlayer;
-        public enum State { Patrol, Alert, Investigate, Chase }
-        public State state;
+        //public enum State { Patrol, Alert, Investigate, Chase }
+        //public GuardUtil.State state;
 
         private AStar.Grid _grid;
 		private GridAgent _gridAgent;
+        public GuardUtil _guardUtil;
 
 		#region Sight
 		public float timeToSpotPlayer = 0.5f;
@@ -59,12 +58,19 @@ namespace Assets.Scripts
 		public float ChaseSpeed = 2.0f;
         public float ChaseTime = 20.0f;
 		private bool _chasing;
-        #endregion
+		#endregion
 
-        #endregion
+		#endregion
 
-		void Start()
-        {
+		private void Awake()
+		{
+            if(GetComponent<GuardUtil>() == null) gameObject.AddComponent<GuardUtil>();
+		}
+
+        void Start()
+		{
+			_guardUtil = GetComponent<GuardUtil>();
+
             _FOV = GetComponent<FieldOfView>();
             _audioSource = FindObjectOfType<AudioSource>();
             _grid = FindObjectOfType<AStar.Grid>();
@@ -76,7 +82,7 @@ namespace Assets.Scripts
             if (RandomWaypoints)
                 _waypointIndex = Random.Range(0, Waypoints.Length);
 
-            state = State.Patrol;
+            _guardUtil.state = GuardUtil.State.Patrol;
         }
 
         void Update()
@@ -90,22 +96,22 @@ namespace Assets.Scripts
 
 		private void FSM()
 		{
-            switch (state)
+            switch (_guardUtil.state)
             {
-                case State.Patrol:
+                case GuardUtil.State.Patrol:
                     SpotPlayer();
                     if(!_patrolling)
                         StartCoroutine(Patrol());
                     break;
-                case State.Alert:
+                case GuardUtil.State.Alert:
                     if (!_alerted)
                         StartCoroutine(Alert());
                     break;
-                case State.Investigate:
+                case GuardUtil.State.Investigate:
                     if (!_investigating)
                         StartCoroutine(Investigate());
                     break;
-                case State.Chase:
+                case GuardUtil.State.Chase:
                     if (!_chasing)
                         StartCoroutine(Chase());
                     break;
@@ -121,7 +127,7 @@ namespace Assets.Scripts
             _gridAgent.SetSpeed(PatrolSpeed);
             _gridAgent.SetDestination(transform.position, Waypoints[0].transform.position);
 
-		    while (state == State.Patrol)
+            while (_guardUtil.state == GuardUtil.State.Patrol)
 		    {
                 // Ensure has reached current waypoints destination
 		        if (_gridAgent.HasPathFinished())
@@ -166,7 +172,7 @@ namespace Assets.Scripts
             _gridAgent.StopMoving();
             yield return new WaitForSeconds(AlertReactionTime);
 
-            while (state == State.Alert) {
+            while (_guardUtil.state == GuardUtil.State.Alert) {
 				print("Alerted");
 				_gridAgent.SetSpeed(InvestigateSpeed);
 
@@ -180,14 +186,14 @@ namespace Assets.Scripts
 
                     // Wait for 'InvestigateSpotTime' amount while looking for the player
 					yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
-					state = State.Investigate;
+                    _guardUtil.state = GuardUtil.State.Investigate;
 
 					break;
                 }
 
                 // If can se player while alerted go straight to chase
                 if (CanSeePlayer())
-                    state = State.Chase;
+                    _guardUtil.state = GuardUtil.State.Chase;
 
                yield return null;
             }
@@ -208,13 +214,13 @@ namespace Assets.Scripts
             _gridAgent.SetSpeed(InvestigateSpeed);
             _gridAgent.SetDestination(transform.position, targetPosition);
 
-			while(state == State.Investigate) {
+            while(_guardUtil.state == GuardUtil.State.Investigate) {
                 // Add to time
 				timer += Time.deltaTime;
 
 				// If can se player while investigating go straight to chase
 				if (CanSeePlayer())
-					state = State.Chase;
+                    _guardUtil.state = GuardUtil.State.Chase;
 
                 if (_gridAgent.HasPathFinished())
                 {
@@ -237,7 +243,7 @@ namespace Assets.Scripts
 
                 if (timer >= InvestigateTime){
                     // If investiage time reached go back to patrol
-                    state = State.Patrol;
+                    _guardUtil.state = GuardUtil.State.Patrol;
                     break;
                 }
 
@@ -259,7 +265,7 @@ namespace Assets.Scripts
 			_gridAgent.SetDestination(transform.position, laspPos);
 			_gridAgent.SetSpeed(ChaseSpeed);
 
-            while (state == State.Chase)
+            while (_guardUtil.state == GuardUtil.State.Chase)
             {
                 timer += Time.deltaTime;
 
@@ -273,18 +279,15 @@ namespace Assets.Scripts
 
                 if (Vector3.Distance(transform.position, Player.transform.position) <= 1.0f)
                 {
-                    if (OnGuardCaughtPlayer != null)
-                    {
-                        OnGuardCaughtPlayer();
-                        _gridAgent.StopMoving();
-                    }
+					_gridAgent.StopMoving();
+                    _guardUtil.GuardOnCaughtPlayer();
                 } else if (Vector3.Distance(transform.position, Player.transform.position) >= 20f) {
-                    state = State.Investigate;
+                    _guardUtil.state = GuardUtil.State.Investigate;
                     break;
                 }
 
                 if(timer >= ChaseTime) {
-                    state = State.Investigate;
+                    _guardUtil.state = GuardUtil.State.Investigate;
                     break;
                 }
 
@@ -299,7 +302,7 @@ namespace Assets.Scripts
 
             playerVisibleTimer = Mathf.Clamp(playerVisibleTimer, 0, timeToSpotPlayer);
 
-            if (playerVisibleTimer >= timeToSpotPlayer) state = State.Alert;
+            if (playerVisibleTimer >= timeToSpotPlayer) _guardUtil.state = GuardUtil.State.Alert;
         }
 
 		public bool CanSeePlayer()
@@ -331,7 +334,7 @@ namespace Assets.Scripts
 
             while(timer <= waitTime) {
 				if (CanSeePlayer())
-					state = State.Chase;
+                    _guardUtil.state = GuardUtil.State.Chase;
 
 				timer += Time.deltaTime;
                 yield return null;
