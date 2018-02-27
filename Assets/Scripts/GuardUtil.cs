@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.ConstrainedExecution;
 using Assets.Scripts.AStar;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -12,7 +9,6 @@ namespace Assets.Scripts
         public static event Action OnGuardCaughtPlayer;
 
         public enum State { Patrol, Alert, Investigate, Chase }
-
         public State state { get; set; }
 
         /// <summary>
@@ -25,6 +21,12 @@ namespace Assets.Scripts
             }
         }
 
+        /// <summary>
+        /// When player is in sight for longer than "timeToSpotPlayer" variable change state to alert
+        /// </summary>
+        /// <param name="fov"></param>
+        /// <param name="playerVisibleTimer"></param>
+        /// <param name="timeToSpotPlayer"></param>
         public void SpotPlayer(FieldOfView fov, ref float playerVisibleTimer, float timeToSpotPlayer)
         {
             if (fov.VisibleTargets.Count > 0) playerVisibleTimer += Time.deltaTime;
@@ -35,23 +37,33 @@ namespace Assets.Scripts
             if (playerVisibleTimer >= timeToSpotPlayer) state = GuardUtil.State.Alert;
         }
 
+        /// <summary>
+        /// Returns true if can see player (No Time Restraints)
+        /// </summary>
+        /// <param name="fov"></param>
+        /// <returns></returns>
         public static bool CanSeePlayer(FieldOfView fov)
         {
             return fov.VisibleTargets.Count > 0;
         }
 
+        /// <summary>
+        /// Creates a randomly generated "walkable" vector3 position. <para />
+        /// Returns default Vector3 if cannot create walkable position
+        /// </summary>
+        /// <param name="origin"></param>
+        /// <param name="dist"></param>
+        /// <param name="grid"></param>
+        /// <returns></returns>
         public static Vector3 CreateRandomWalkablePosition(Vector3 origin, float dist, AStar.Grid grid = null)
         {
-            if (grid == null)
-            {
-                grid = FindObjectOfType<AStar.Grid>();
-            }
+            if (grid == null) grid = FindObjectOfType<AStar.Grid>();
 
             if (grid != null)
             {
-                Vector3 randomPosition = CreateRandomPosition(origin, dist);
+                var randomPosition = CreateRandomPosition(origin, dist);
+                var newPositionNode = grid.GetNodeFromWorldPoint(randomPosition);
 
-                Node newPositionNode = grid.GetNodeFromWorldPoint(randomPosition);
                 while (!newPositionNode.walkable)
                 {
                     randomPosition = CreateRandomPosition(origin, dist);
@@ -59,14 +71,19 @@ namespace Assets.Scripts
                 }
                 return randomPosition;
             }
-            else
-            {
-                Debug.LogError("Grid doesn't exist");
-                return new Vector3();
-            }
 
+            Debug.LogError("AStar.Grid object doesn't exist or cannot be found");
+            return new Vector3();
         }
 
+        /// <summary>
+        /// Creates a randomly generated "walkable" vector3 position, remebering the last position <para />
+        /// Returns default Vector3 if cannot create walkable position
+        /// </summary>
+        /// <param name="origin"></param>
+        /// <param name="dist"></param>
+        /// <param name="grid"></param>
+        /// <returns></returns>
         public static Vector3 CreateRandomWalkablePosition(Vector3 origin, float dist, ref Vector3 lastPos, AStar.Grid grid = null)
         {
             if (grid == null)
@@ -98,7 +115,13 @@ namespace Assets.Scripts
 
         }
 
-        public static Vector3 CreateRandomPosition(Vector3 origin, float dist)
+        /// <summary>
+        /// Creates a random vector3 position
+        /// </summary>
+        /// <param name="origin"></param>
+        /// <param name="dist"></param>
+        /// <returns></returns>
+        private static Vector3 CreateRandomPosition(Vector3 origin, float dist)
         {
             var randomPosition = Random.insideUnitSphere;
             randomPosition.y = 0;
@@ -108,6 +131,12 @@ namespace Assets.Scripts
             return randomPosition + origin;
         }
 
+        /// <summary>
+        /// Draws a line to the next waypoint
+        /// </summary>
+        /// <param name="currentPosition"></param>
+        /// <param name="waypoints"></param>
+        /// <param name="waypointIndex"></param>
         public static void DrawNextWaypointLineGizmos(Vector3 currentPosition, GameObject[] waypoints, int waypointIndex)
         {
             if (waypoints == null || waypoints.Length < 1) return;
@@ -116,6 +145,10 @@ namespace Assets.Scripts
             Gizmos.DrawLine(currentPosition, waypoints[waypointIndex].transform.position);
         }
 
+        /// <summary>
+        /// Draws lines between waypoints and spheres for the waypoints
+        /// </summary>
+        /// <param name="waypoints"></param>
         public static void DrawWaypointGizmos(GameObject[] waypoints)
         {
             if (waypoints == null || waypoints.Length < 1) return;
@@ -132,16 +165,5 @@ namespace Assets.Scripts
 
             Gizmos.DrawLine(previousPosition, startPosition);
         }
-
-        //private bool DestinationReached(Vector3 currentPos, Vector3 targetPos)
-        //{
-        //    var currentNode = _grid.GetNodeFromWorldPoint(currentPos);
-        //    var targetNode = _grid.GetNodeFromWorldPoint(targetPos);
-
-        //    if (currentNode != targetNode) return false;
-
-        //    print("Position Reached");
-        //    return true;
-        //}
     }
 }

@@ -310,38 +310,46 @@ namespace Assets.Scripts
 			_chasing = false;
 		}
 
-		/// <summary>
-		/// LookForPlayer:
-		/// LookForPlayer is a method which adds the functionality of new WaitForSeconds, but with improved SpotPlayer();
-		/// method call to ensure that the guard can see the player while the guard is waiting.
-		/// </summary>
-		/// <param name="waitTime"></param>
-		/// <returns></returns>
-		private IEnumerator LookForPlayer(float waitTime)
-		{
-			float timer = 0;
+	    /// <summary>
+	    /// LookForPlayer:
+	    /// LookForPlayer is a method which adds the functionality of new WaitForSeconds, but with improved SpotPlayer();
+	    /// method call to ensure that the guard can see the player while the guard is waiting.
+	    /// </summary>
+	    /// <param name="waitTime"></param>
+	    /// <returns></returns>
+	    private IEnumerator LookForPlayer(float waitTime)
+	    {
+	        var timer = 0f;
 
-			while (timer <= waitTime)
-			{
-				GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
-				timer += Time.deltaTime;
-				yield return null;
-			}
-		}
+	        while (timer <= waitTime)
+	        {
+	            GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
+	            timer += Time.deltaTime;
+	            yield return null;
+	        }
+	    }
 
-		private IEnumerator SearchForPlayer(float waitTime)
-		{
-			float timer = 0;
+	    /// <summary>
+	    /// Adds functionaility for new WaitForSeconds, but with improved can see player checks to change state
+	    /// to chase if player is detected.
+	    /// </summary>
+	    /// <param name="waitTime"></param>
+	    /// <returns></returns>
+	    private IEnumerator SearchForPlayer(float waitTime)
+	    {
+	        var timer = 0f;
 
-			while (timer <= waitTime)
-			{
-				if (GuardUtil.CanSeePlayer(_fov)) GuardUtil.state = GuardUtil.State.Chase;
-				timer += Time.deltaTime;
-				yield return null;
-			}
-		}
-		
-		public void OnDrawGizmos()
+	        while (timer <= waitTime)
+	        {
+	            if (GuardUtil.CanSeePlayer(_fov))
+	                GuardUtil.state = GuardUtil.State.Chase;
+
+	            timer += Time.deltaTime;
+	            yield return null;
+	        }
+	    }
+
+        public void OnDrawGizmos()
 		{
             GuardUtil.DrawWaypointGizmos(Waypoints);
             GuardUtil.DrawNextWaypointLineGizmos(transform.position, Waypoints, _waypointIndex);
