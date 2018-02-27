@@ -2,6 +2,7 @@
 using System.Linq;
 using Assets.Scripts.AStar;
 using UnityEngine;
+using UnityStandardAssets.Characters.ThirdPerson;
 
 namespace Assets.Scripts
 {
@@ -12,8 +13,11 @@ namespace Assets.Scripts
         private AudioSource _audioSource;
         public GameObject Player;
         public bool AutoTargetPlayer;
-        //public enum State { Patrol, Alert, Investigate, Chase }
-        //public GuardUtil.State state;
+		//public enum State { Patrol, Alert, Investigate, Chase }
+		//public GuardUtil.State state;
+		private ThirdPersonCharacter _character;
+		private Rigidbody _rigidbody;
+        private Animator _animator;
 
         private AStar.Grid _grid;
 		private GridAgent _gridAgent;
@@ -65,6 +69,9 @@ namespace Assets.Scripts
 		private void Awake()
 		{
             if(GetComponent<GuardUtil>() == null) gameObject.AddComponent<GuardUtil>();
+			_character = GetComponent<ThirdPersonCharacter>();
+			_rigidbody = GetComponent<Rigidbody>();
+            _animator = GetComponent<Animator>();
 		}
 
         void Start()
@@ -87,10 +94,6 @@ namespace Assets.Scripts
 
         void Update()
         {
-            // TODO FIX ME
-			//AudioClip clip = Resources.Load<AudioClip>("Voices/huh_01");
-			//_audioSource.PlayOneShot(clip);
-
             FSM();
         }
 
@@ -122,16 +125,25 @@ namespace Assets.Scripts
         {
             _patrolling = true;
             print("Patrolling");
+            var _speed = PatrolSpeed;
+            bool canMove = true;
 
-            // Goto first waypoint
-            _gridAgent.SetSpeed(PatrolSpeed);
-            _gridAgent.SetDestination(transform.position, Waypoints[0].transform.position);
+			//transform.position = Vector3.MoveTowards(transform.position, Waypoints[0].transform.position, PatrolSpeed * Time.deltaTime);
+			//_character.Move((Waypoints[0].transform.position - transform.position).normalized * PatrolSpeed, false, false);
 
             while (_guardUtil.state == GuardUtil.State.Patrol)
 		    {
+                //transform.position = Vector3.MoveTowards(transform.position, Waypoints[_waypointIndex].transform.position, PatrolSpeed * Time.deltaTime);
+                //_character.Move((Waypoints[_waypointIndex].transform.position - transform.position).normalized * PatrolSpeed, false, false);
+                transform.position = Vector3.MoveTowards(transform.position, Waypoints[_waypointIndex].transform.position, _speed * Time.deltaTime);
+                    _character.Move((Waypoints[_waypointIndex].transform.position - transform.position).normalized * _speed, false, false);
+                    print("Walking");
+
                 // Ensure has reached current waypoints destination
-		        if (_gridAgent.HasPathFinished())
+                if (Vector3.Distance(transform.position, Waypoints[_waypointIndex].transform.position) <= 0.1f)
 		        {
+                    print("Destination Reached");
+
                     // Calculate next waypoint
                     if (RandomWaypoints)
 		                _waypointIndex = Random.Range(0, Waypoints.Length);
@@ -142,16 +154,20 @@ namespace Assets.Scripts
 		                    _waypointIndex = 0;
 		            }
 
-                    // Setting the destination to next waypoint
-                    _gridAgent.SetDestination(transform.position, Waypoints[_waypointIndex].transform.position);
+				
+                    //_animator.StopPlayback();
+                    _animator.SetFloat("Forward", 0);
+                    //_rigidbody.isKinematic = true;
+                    
+                    //transform.position = Vector3.MoveTowards(transform.position, transform.position, 0);
 
+                    //_character.Move(Vector3.zero, false, false);
+					//_character.Move((Waypoints[_waypointIndex].transform.position - transform.position).normalized * 0, false, false);
                     // Stop the guard for PatrolWaitTime amount of time
-		            _gridAgent.StopMoving();
 		            yield return StartCoroutine(LookForPlayer(PatrolWaitTime));
-
-                    // Continue patrolling at PatrolSpeed
-                    _gridAgent.SetSpeed(PatrolSpeed);
+                    //_rigidbody.isKinematic = false;
                 }
+
 		        yield return null;
 		    }
             _patrolling = false;

@@ -63,6 +63,8 @@ namespace Assets.Scripts.AStar
 		{
 		    _speed = 0;
             _character.Move(Vector3.zero, false, false);
+            if (lastRoutine != null)
+                StopAllCoroutines();
 		}
 
         private IEnumerator FollowPath()
