@@ -1,6 +1,6 @@
-﻿﻿using System;
-using System.Collections;
-using UnityEngine;
+﻿using System.Collections;
+ using JetBrains.Annotations;
+ using UnityEngine;
 using UnityStandardAssets.Characters.ThirdPerson;
 
 namespace Assets.Scripts.AStar
@@ -8,69 +8,62 @@ namespace Assets.Scripts.AStar
     public class GridAgent : MonoBehaviour
     {
         private Vector3[] _path;
-        private float _speed;
-        private int _targetIndex = 0;
+        private int _targetIndex;
         private ThirdPersonCharacter _character;
-        private Rigidbody _rigidbody;
-        private bool _pathFinished;
-        private bool _following;
-        Coroutine lastRoutine = null;
+        private Coroutine _lastRoutine;
 
+        // Properties
+        public bool HasPathFinished { get; private set; }
+        public float Speed { get; set; }
+
+        [UsedImplicitly]
         private void Awake()
         {
             _character = GetComponent<ThirdPersonCharacter>();
-            _rigidbody = GetComponent<Rigidbody>();
         }
 
-        public float GetSpeed() {
-            return _speed;
-        }
-
-        public void SetSpeed(float speed) {
-            this._speed = speed;
-        }
 
         public void SetDestination(Vector3 currentPosition, Vector3 targetPosition)
         {
-            _pathFinished = false;
-            PathRequestManager.RequestPath(new PathRequest(currentPosition, targetPosition, this.OnPathFound));
+            HasPathFinished = false;
+            PathRequestManager.RequestPath(new PathRequest(currentPosition, targetPosition, OnPathFound));
         }
 
-        public bool PathFound() {
-            if(_path != null && _path.Length > 0) {
-                return true;
-            }
-            return false;
+        public bool PathFound()
+        {
+            return _path != null && _path.Length > 0;
         }
 
         public void OnPathFound(Vector3[] newPath, bool pathSuccessful)
         {
-            print("Path Found");
+            // Path found: check if successful
             if (!pathSuccessful)
             {
-                _pathFinished = true;
+                HasPathFinished = true;
                 return;
             }
 
+            // If successful Dispose of old path and stop any coroutines
             _path = newPath;
-            if (lastRoutine != null)
+            if (_lastRoutine != null)
                 StopAllCoroutines();
- 
-            lastRoutine = StartCoroutine("FollowPath");
+
+            // Start coroutine to follow path
+            _lastRoutine = StartCoroutine("FollowPath");
         }
 
 		public void StopMoving()
 		{
-		    _speed = 0;
+		    Speed = 0;
             _character.Move(Vector3.zero, false, false);
-            if (lastRoutine != null)
+            if (_lastRoutine != null)
                 StopAllCoroutines();
 		}
 
+        [UsedImplicitly]
         private IEnumerator FollowPath()
         {
-            //_following = true;
-            Vector3 currentWaypoint = _path[0];
+            var currentWaypoint = _path[0];
 
             while (true)
             {
@@ -79,48 +72,43 @@ namespace Assets.Scripts.AStar
                     _targetIndex++;
                     if (_targetIndex >= _path.Length)
                     {
-                        _pathFinished = true;
+                        HasPathFinished = true;
                         _targetIndex = 0;
                         break;
                     }
                     currentWaypoint = _path[_targetIndex];
                 }
 
-				transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, _speed * Time.deltaTime);
-				_character.Move((currentWaypoint - transform.position).normalized * _speed, false, false);
+				transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, Speed * Time.deltaTime);
+				_character.Move((currentWaypoint - transform.position).normalized * Speed, false, false);
   
                 yield return null;
             }
             yield return null;
         }
 
+        /// <summary>
+        /// Moves the object attacted straight to the target parameters position overtime
+        /// </summary>
+        /// <param name="target"></param>
         public void StraightToDestination(Vector3 target) {
-            transform.position = Vector3.MoveTowards(transform.position, target, _speed * Time.deltaTime);
-            _character.Move((target - transform.position).normalized * _speed, false, false);
+            transform.position = Vector3.MoveTowards(transform.position, target, Speed * Time.deltaTime);
+            _character.Move((target - transform.position).normalized * Speed, false, false);
         }
 
-        public bool HasPathFinished()
-        {
-            return _pathFinished;
-        }
-
+        /// <summary>
+        /// 
+        /// </summary>
         public void OnDrawGizmos()
         {
-            if (_path == null) return;
+            if (!PathFound()) return;
 
             for (var i = _targetIndex; i < _path.Length; i++)
             {
                 Gizmos.color = Color.black;
                 Gizmos.DrawCube(_path[i], Vector3.one);
 
-                if (i == _targetIndex)
-                {
-                    Gizmos.DrawLine(transform.position, _path[i]);
-                }
-                else
-                {
-                    Gizmos.DrawLine(_path[i - 1], _path[i]);
-                }
+                Gizmos.DrawLine(i == _targetIndex ? transform.position : _path[i - 1], _path[i]);
             }
         }
     }

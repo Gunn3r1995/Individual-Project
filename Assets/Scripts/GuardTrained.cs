@@ -1,7 +1,9 @@
 ﻿using System.Collections;
 using System.Linq;
 using Assets.Scripts.AStar;
+using JetBrains.Annotations;
 using UnityEngine;
+using UnityStandardAssets.Characters.ThirdPerson;
 
 namespace Assets.Scripts
 {
@@ -9,7 +11,8 @@ namespace Assets.Scripts
 	{
 		#region Variables
 
-		FieldOfView _FOV;
+		public GuardUtil GuardUtil;
+		private FieldOfView _fov;
 		private AudioSource _audioSource;
 		public GameObject Player;
 		public bool AutoTargetPlayer;
@@ -18,11 +21,10 @@ namespace Assets.Scripts
 
 		private AStar.Grid _grid;
 		private GridAgent _gridAgent;
-		public GuardUtil _guardUtil;
 
 		#region Sight
-		public float timeToSpotPlayer = 0.5f;
-		private float playerVisibleTimer;
+		public float TimeToSpotPlayer = 0.5f;
+		private float _playerVisibleTimer;
 		#endregion
 
 		#region Patrol
@@ -42,7 +44,7 @@ namespace Assets.Scripts
 
 		public float AlertReactionTime = 2.0f;
 
-		private Vector3 AlertSpot;
+		private Vector3 _alertSpot;
 		private bool _alerted;
 		#endregion
 
@@ -59,47 +61,49 @@ namespace Assets.Scripts
 		public float ChaseSpeed = 2.0f;
 		public float ChaseTime = 20.0f;
 		private bool _chasing;
-		#endregion
+        #endregion
 
-		#endregion
+        #endregion
 
-		private void Awake()
-		{
-			if (GetComponent<GuardUtil>() == null) gameObject.AddComponent<GuardUtil>();
-		}
+	    [UsedImplicitly]
+	    private void Awake()
+	    {
+	        if (GetComponent<GuardUtil>() == null) gameObject.AddComponent<GuardUtil>();
+	        GuardUtil = GetComponent<GuardUtil>();
+	        _fov = GetComponent<FieldOfView>();
+	        _grid = FindObjectOfType<AStar.Grid>();
+	        _gridAgent = GetComponent<GridAgent>();
+	        _audioSource = FindObjectOfType<AudioSource>();
+        }
 
-		void Start()
-		{
-			_guardUtil = GetComponent<GuardUtil>();
-			_FOV = GetComponent<FieldOfView>();
-			_audioSource = FindObjectOfType<AudioSource>();
-			_grid = FindObjectOfType<AStar.Grid>();
-			_gridAgent = GetComponent<GridAgent>();
+	    [UsedImplicitly]
+	    private void Start()
+	    {
+	        if (AutoTargetPlayer)
+	            Player = GameObject.FindGameObjectsWithTag("Player").Last();
 
-			if (AutoTargetPlayer)
-				Player = GameObject.FindGameObjectsWithTag("Player").Last();
+	        if (RandomWaypoints)
+	            _waypointIndex = Random.Range(0, Waypoints.Length);
 
-			if (RandomWaypoints)
-				_waypointIndex = Random.Range(0, Waypoints.Length);
+	        GuardUtil.state = GuardUtil.State.Patrol;
+	    }
 
-			_guardUtil.state = GuardUtil.State.Patrol;
-		}
-
-		void Update()
+	    [UsedImplicitly]
+	    private void Update()
 		{
 			// TODO FIX ME
 			//AudioClip clip = Resources.Load<AudioClip>("Voices/huh_01");
 			//_audioSource.PlayOneShot(clip);
 
-			FSM();
+			Fsm();
 		}
 
-		private void FSM()
+		private void Fsm()
 		{
-			switch (_guardUtil.state)
+			switch (GuardUtil.state)
 			{
 				case GuardUtil.State.Patrol:
-					SpotPlayer();
+					GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
 					if (!_patrolling)
 						StartCoroutine(Patrol());
 					break;
@@ -124,13 +128,13 @@ namespace Assets.Scripts
 			print("Patrolling");
 
 			// Goto first waypoint
-			_gridAgent.SetSpeed(PatrolSpeed);
+			_gridAgent.Speed = PatrolSpeed;
 			_gridAgent.SetDestination(transform.position, Waypoints[0].transform.position);
 
-			while (_guardUtil.state == GuardUtil.State.Patrol)
+			while (GuardUtil.state == GuardUtil.State.Patrol)
 			{
 				// Ensure has reached current waypoints destination
-				if (_gridAgent.HasPathFinished())
+				if (_gridAgent.HasPathFinished)
 				{
 					// Calculate next waypoint
 					if (RandomWaypoints)
@@ -150,7 +154,7 @@ namespace Assets.Scripts
 					yield return StartCoroutine(LookForPlayer(PatrolWaitTime));
 
 					// Continue patrolling at PatrolSpeed
-					_gridAgent.SetSpeed(PatrolSpeed);
+					_gridAgent.Speed = PatrolSpeed;
 				}
 				yield return null;
 			}
@@ -163,39 +167,39 @@ namespace Assets.Scripts
 			_alerted = true;
 
 			// Set alert spot to players location
-			AlertSpot = Player.transform.position;
+			_alertSpot = Player.transform.position;
 
 			// Set the destination to the alert spot
-			transform.LookAt(AlertSpot);
-			_gridAgent.SetDestination(transform.position, AlertSpot);
+			transform.LookAt(_alertSpot);
+			_gridAgent.SetDestination(transform.position, _alertSpot);
 
 			// Stop moving and wait for 'AlertReactionTime' amount
 			_gridAgent.StopMoving();
 			yield return new WaitForSeconds(AlertReactionTime);
 
-			while (_guardUtil.state == GuardUtil.State.Alert)
+			while (GuardUtil.state == GuardUtil.State.Alert)
 			{
 				print("Alerted");
-				_gridAgent.SetSpeed(InvestigateSpeed);
+			    _gridAgent.Speed = InvestigateSpeed;
 
-				if (_gridAgent.HasPathFinished())
+				if (_gridAgent.HasPathFinished)
 				{
 					// On Alert Destination Reached
 
 					// Work around to force stop the agent
-					_gridAgent.SetDestination(transform.position, CreateRandomWalkablePosition(transform.position, 5.0f, _grid));
+					_gridAgent.SetDestination(transform.position, GuardUtil.CreateRandomWalkablePosition(transform.position, 5.0f, _grid));
 					_gridAgent.StopMoving();
 
 					// Wait for 'InvestigateSpotTime' amount while looking for the player
 					yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
-					_guardUtil.state = GuardUtil.State.Investigate;
+					GuardUtil.state = GuardUtil.State.Investigate;
 
 					break;
 				}
 
 				// If can se player while alerted go straight to chase
-				if (CanSeePlayer())
-					_guardUtil.state = GuardUtil.State.Chase;
+				if (GuardUtil.CanSeePlayer(_fov))
+					GuardUtil.state = GuardUtil.State.Chase;
 
 				yield return null;
 			}
@@ -211,26 +215,26 @@ namespace Assets.Scripts
 
 			Vector3 lastPos = new Vector3(0, 0, 0);
 			// Generate first waypoint and save the position
-			Vector3 targetPosition = CreateRandomWalkablePosition(AlertSpot, WanderRadius, ref lastPos, _grid);
+			Vector3 targetPosition = GuardUtil.CreateRandomWalkablePosition(_alertSpot, WanderRadius, ref lastPos, _grid);
 
 			// Go to first waypoint
-			_gridAgent.SetSpeed(InvestigateSpeed);
+			_gridAgent.Speed = InvestigateSpeed;
 			_gridAgent.SetDestination(transform.position, targetPosition);
 
-			while (_guardUtil.state == GuardUtil.State.Investigate)
+			while (GuardUtil.state == GuardUtil.State.Investigate)
 			{
 				// Add to time
 				timer += Time.deltaTime;
 
 				// If can se player while investigating go straight to chase
-				if (CanSeePlayer())
-					_guardUtil.state = GuardUtil.State.Chase;
+				if (GuardUtil.CanSeePlayer(_fov))
+					GuardUtil.state = GuardUtil.State.Chase;
 
-				if (_gridAgent.HasPathFinished())
+				if (_gridAgent.HasPathFinished)
 				{
 					// Guard reached waypoint
 					// Create a new waypoint parsing in the last waypoint; by reference so that it keeps the 'lastPos' updated
-					targetPosition = CreateRandomWalkablePosition(AlertSpot, WanderRadius, ref lastPos);
+					targetPosition = GuardUtil.CreateRandomWalkablePosition(_alertSpot, WanderRadius, ref lastPos);
 
 					// Set the destination and stop moving work around
 					_gridAgent.SetDestination(transform.position, targetPosition);
@@ -242,13 +246,13 @@ namespace Assets.Scripts
 					timer += InvestigateSpotTime;
 
 					// Start walking to next waypoint
-					_gridAgent.SetSpeed(InvestigateSpeed);
+				    _gridAgent.Speed = InvestigateSpeed;
 				}
 
 				if (timer >= InvestigateTime)
 				{
 					// If investiage time reached go back to patrol
-					_guardUtil.state = GuardUtil.State.Patrol;
+					GuardUtil.state = GuardUtil.State.Patrol;
 					break;
 				}
 
@@ -268,13 +272,13 @@ namespace Assets.Scripts
 			Vector3 laspPos = Player.transform.position;
 			transform.LookAt(laspPos);
 			_gridAgent.SetDestination(transform.position, laspPos);
-			_gridAgent.SetSpeed(ChaseSpeed);
+		    _gridAgent.Speed = ChaseSpeed;
 
-			while (_guardUtil.state == GuardUtil.State.Chase)
+			while (GuardUtil.state == GuardUtil.State.Chase)
 			{
 				timer += Time.deltaTime;
 
-				if (CanSeePlayer())
+				if (GuardUtil.CanSeePlayer(_fov))
 				{
 					laspPos = Player.transform.position;
 					_gridAgent.StraightToDestination(Player.transform.position);
@@ -287,38 +291,23 @@ namespace Assets.Scripts
 				if (Vector3.Distance(transform.position, Player.transform.position) <= 1.0f)
 				{
 					_gridAgent.StopMoving();
-					_guardUtil.GuardOnCaughtPlayer();
+					GuardUtil.GuardOnCaughtPlayer();
 				}
 				else if (Vector3.Distance(transform.position, Player.transform.position) >= 20f)
 				{
-					_guardUtil.state = GuardUtil.State.Investigate;
+					GuardUtil.state = GuardUtil.State.Investigate;
 					break;
 				}
 
 				if (timer >= ChaseTime)
 				{
-					_guardUtil.state = GuardUtil.State.Investigate;
+					GuardUtil.state = GuardUtil.State.Investigate;
 					break;
 				}
 
 				yield return null;
 			}
 			_chasing = false;
-		}
-
-		private void SpotPlayer()
-		{
-			if (_FOV.VisibleTargets.Count > 0) playerVisibleTimer += Time.deltaTime;
-			else playerVisibleTimer -= Time.deltaTime;
-
-			playerVisibleTimer = Mathf.Clamp(playerVisibleTimer, 0, timeToSpotPlayer);
-
-			if (playerVisibleTimer >= timeToSpotPlayer) _guardUtil.state = GuardUtil.State.Alert;
-		}
-
-		public bool CanSeePlayer()
-		{
-			return _FOV.VisibleTargets.Count > 0;
 		}
 
 		/// <summary>
@@ -334,7 +323,7 @@ namespace Assets.Scripts
 
 			while (timer <= waitTime)
 			{
-				SpotPlayer();
+				GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
 				timer += Time.deltaTime;
 				yield return null;
 			}
@@ -346,109 +335,16 @@ namespace Assets.Scripts
 
 			while (timer <= waitTime)
 			{
-				if (CanSeePlayer())
-					_guardUtil.state = GuardUtil.State.Chase;
-
+				if (GuardUtil.CanSeePlayer(_fov)) GuardUtil.state = GuardUtil.State.Chase;
 				timer += Time.deltaTime;
 				yield return null;
 			}
 		}
-
-		private static Vector3 CreateRandomWalkablePosition(Vector3 origin, float dist, AStar.Grid grid = null)
-		{
-			if (grid == null)
-			{
-				grid = FindObjectOfType<AStar.Grid>();
-			}
-
-			if (grid != null)
-			{
-				Vector3 randomPosition = CreateRandomPosition(origin, dist);
-
-				Node newPositionNode = grid.GetNodeFromWorldPoint(randomPosition);
-				while (!newPositionNode.walkable)
-				{
-					randomPosition = CreateRandomPosition(origin, dist);
-					newPositionNode = grid.GetNodeFromWorldPoint(randomPosition);
-				}
-				return randomPosition;
-			}
-			else
-			{
-				Debug.LogError("Grid doesn't exist");
-				return new Vector3();
-			}
-
-		}
-
-		private static Vector3 CreateRandomWalkablePosition(Vector3 origin, float dist, ref Vector3 lastPos, AStar.Grid grid = null)
-		{
-			if (grid == null)
-			{
-				grid = FindObjectOfType<AStar.Grid>();
-			}
-
-			if (grid != null)
-			{
-				Vector3 randomPosition = CreateRandomPosition(origin, dist);
-
-				Node newPositionNode = grid.GetNodeFromWorldPoint(randomPosition);
-				Node lastPositionNode = grid.GetNodeFromWorldPoint(lastPos);
-				while (!newPositionNode.walkable || Vector3.Distance(lastPositionNode.WorldPosition, newPositionNode.WorldPosition) <= 2.0f)
-				{
-					randomPosition = CreateRandomPosition(origin, dist);
-					newPositionNode = grid.GetNodeFromWorldPoint(randomPosition);
-				}
-
-				lastPos = randomPosition;
-				return randomPosition;
-			}
-			else
-			{
-				Debug.LogError("Grid doesn't exist");
-				lastPos = new Vector3();
-				return new Vector3();
-			}
-
-		}
-
-		public static Vector3 CreateRandomPosition(Vector3 origin, float dist)
-		{
-			Vector3 randomPosition = Random.insideUnitSphere;
-			randomPosition.y = 0;
-			randomPosition.Normalize();
-			randomPosition *= dist;
-
-			return randomPosition + origin;
-		}
-
+		
 		public void OnDrawGizmos()
 		{
-			if (Waypoints.Length >= 1)
-			{
-				var startPosition = Waypoints[0].transform.position;
-				var previousPosition = startPosition;
-
-				foreach (var waypoint in Waypoints)
-				{
-					Gizmos.DrawSphere(waypoint.transform.position, 0.3f);
-					Gizmos.DrawLine(previousPosition, waypoint.transform.position);
-					previousPosition = waypoint.transform.position;
-				}
-
-				Gizmos.DrawLine(previousPosition, startPosition);
-			}
-		}
-
-		private bool DestinationReached(Vector3 currentPos, Vector3 targetPos)
-		{
-			var currentNode = _grid.GetNodeFromWorldPoint(currentPos);
-			var targetNode = _grid.GetNodeFromWorldPoint(targetPos);
-
-			if (currentNode != targetNode) return false;
-
-			print("Position Reached");
-			return true;
+            GuardUtil.DrawWaypointGizmos(Waypoints);
+            GuardUtil.DrawNextWaypointLineGizmos(transform.position, Waypoints, _waypointIndex);
 		}
 
 	}
