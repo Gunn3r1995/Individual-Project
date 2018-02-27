@@ -9,7 +9,8 @@ namespace Assets.Scripts
         public static event Action OnGuardCaughtPlayer;
 
         public enum State { Patrol, Alert, Investigate, Chase }
-        public State state { get; set; }
+
+        public State state;
 
         /// <summary>
         /// Calls OnGuardCaughtPlayer action methods if any methods are attached

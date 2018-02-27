@@ -189,9 +189,12 @@ namespace Assets.Scripts
 
                 // If can se player while alerted go straight to chase
                 if (GuardUtil.CanSeePlayer(_fov))
+                {
                     GuardUtil.state = GuardUtil.State.Chase;
+                    break;
+                }
 
-               yield return null;
+                yield return null;
             }
             print("Finished Alert");
 			_alerted = false;

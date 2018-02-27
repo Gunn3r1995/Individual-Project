@@ -60,9 +60,11 @@ namespace Assets.Scripts.AStar
                 StopAllCoroutines();
 		}
 
+
         [UsedImplicitly]
         private IEnumerator FollowPath()
         {
+            print("STARTED FOLLOWING PATH");
             var currentWaypoint = _path[0];
 
             while (true)
