@@ -17,15 +17,18 @@ namespace Assets.Scripts
 		private FieldOfView _fov;
 		private AudioSource _audioSource;
 		public GameObject Player;
+	    private PlayerController _playerController;
 		public bool AutoTargetPlayer;
 		//public enum State { Patrol, Alert, Investigate, Chase }
 		//public GuardUtil.State state;
 
 		private AStar.Grid _grid;
 		private GridAgent _gridAgent;
+	    public bool Disabled { get; set; }
+	    public Collider[] Triggers;
 
-		#region Sight
-		public float TimeToSpotPlayer = 0.5f;
+        #region Sight
+        public float TimeToSpotPlayer = 0.5f;
 		private float _playerVisibleTimer;
 		#endregion
 
@@ -81,12 +84,13 @@ namespace Assets.Scripts
 	        _grid = FindObjectOfType<AStar.Grid>();
 	        _gridAgent = GetComponent<GridAgent>();
 	        _audioSource = GetComponent<AudioSource>();
-        }
+	        _playerController = GetComponent<PlayerController>();
+	    }
 
 	    [UsedImplicitly]
 	    private void Start()
 	    {
-	        if (AutoTargetPlayer)
+	        if (AutoTargetPlayer || Player == null)
 	            Player = GameObject.FindGameObjectsWithTag("Player").Last();
 
 	        if (RandomWaypoints)
@@ -94,7 +98,22 @@ namespace Assets.Scripts
 
 	        GuardUtil.state = GuardUtil.State.Patrol;
 	        _audioSource.clip = TestAudioClip;
-        }
+
+	        if (Triggers.Length > 0)
+	        {
+	            FindObjectOfType<PlayerController>().OnPlayerEnterGuardTrigger += TriggerAction;
+	            if (Triggers.Length > 0) Disabled = true;
+            }
+	    }
+
+	    private void TriggerAction(Collider col)
+	    {
+	        foreach (var trigger in Triggers)
+	        {
+	            if (trigger != col) continue;
+	            Disabled = false;
+	        }
+	    }
 
 	    [UsedImplicitly]
 	    private void FixedUpdate()
@@ -102,11 +121,15 @@ namespace Assets.Scripts
             //_audioSource.Play();
             //_audioSource.PlayOneShot(TestAudioClip);
 
-
-			Fsm();
+	        if (Disabled)
+	        {
+	            GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
+	            if (GuardUtil.CanSeePlayer(_fov)) Disabled = false;
+	        }
+            if (!Disabled) Fsm();
 		}
 
-		private void Fsm()
+	    private void Fsm()
 		{
 			switch (GuardUtil.state)
 			{
@@ -396,5 +419,7 @@ namespace Assets.Scripts
 		{
             GuardUtil.DrawWaypointGizmos(Waypoints);
 		}
-	}
+
+
+    }
 }

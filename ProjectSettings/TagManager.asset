@@ -9,6 +9,7 @@ TagManager:
   - Door
   - Guard
   - concrete
+  - GuardTrigger
   layers:
   - Default
   - TransparentFX
@@ -22,7 +23,7 @@ TagManager:
   - Obstacles
   - Wall
   - Unwalkable
-  - 
+  - Guard
   - 
   - 
   - 

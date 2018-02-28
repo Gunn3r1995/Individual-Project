@@ -1,22 +1,26 @@
-﻿using UnityEngine;
+﻿using JetBrains.Annotations;
+using UnityEngine;
 
 namespace Assets.Scripts
 {
     public class GameUI : MonoBehaviour
     {
-        public GameObject gameLoseUI;
-        public GameObject gameWinUI;
-        bool gameIsOver;
+        public GameObject GameLoseUi;
+        public GameObject GameWinUi;
+        public Texture AlertedTexture;
+        private bool _gameIsOver;
 
-        void Start()
+        [UsedImplicitly]
+        private void Start()
         {
-            GuardUtil.OnGuardCaughtPlayer += ShowGameLoseUI;
-            FindObjectOfType<PlayerController>().OnReachedEndOfLevel += ShowGameWinUI;
+            GuardUtil.OnGuardCaughtPlayer += ShowGameLoseUi;
+            FindObjectOfType<PlayerController>().OnReachedEndOfLevel += ShowGameWinUi;
         }
 
+        [UsedImplicitly]
         private void Update()
         {
-            if (gameIsOver)
+            if (_gameIsOver)
             {
                 if (Input.GetKeyDown(KeyCode.Space))
                 {
@@ -25,25 +29,24 @@ namespace Assets.Scripts
             }
         }
 
-        void ShowGameWinUI()
+        private void ShowGameWinUi()
         {
-            OnGameOver(gameWinUI);
+            OnGameOver(GameWinUi);
         }
 
-        void ShowGameLoseUI()
+        private void ShowGameLoseUi()
         {
-            OnGameOver(gameLoseUI);
+            OnGameOver(GameLoseUi);
         }
 
-        void OnGameOver(GameObject gameOverUI)
+        private void OnGameOver(GameObject gameOverUi)
         {
-            gameOverUI.SetActive(true);
-            gameIsOver = true;
+            gameOverUi.SetActive(true);
+            _gameIsOver = true;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
-            GuardUtil.OnGuardCaughtPlayer -= ShowGameLoseUI;
-            FindObjectOfType<PlayerController>().OnReachedEndOfLevel -= ShowGameWinUI;
+            GuardUtil.OnGuardCaughtPlayer -= ShowGameLoseUi;
+            FindObjectOfType<PlayerController>().OnReachedEndOfLevel -= ShowGameWinUi;
         }
-
     }
 }

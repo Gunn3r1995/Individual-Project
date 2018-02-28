@@ -140,7 +140,8 @@ namespace Assets.Scripts
         /// <param name="waypointIndex"></param>
         public static void DrawNextWaypointLineGizmos(Vector3 currentPosition, GameObject[] waypoints, int waypointIndex)
         {
-            if (waypoints == null || waypoints.Length < 1) return;
+            if (waypoints == null) return;
+            if (waypoints.Length < 1) return;
 
             Gizmos.color = Color.black;
             Gizmos.DrawLine(currentPosition, waypoints[waypointIndex].transform.position);
@@ -152,7 +153,8 @@ namespace Assets.Scripts
         /// <param name="waypoints"></param>
         public static void DrawWaypointGizmos(GameObject[] waypoints)
         {
-            if (waypoints == null || waypoints.Length < 1) return;
+            if (waypoints == null) return;
+            if (waypoints.Length < 1) return;
 
             var startPosition = waypoints[0].transform.position;
             var previousPosition = startPosition;

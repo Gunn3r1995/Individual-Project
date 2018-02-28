@@ -1,4 +1,5 @@
-﻿﻿using System.Collections.Generic;
+﻿using System;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -6,7 +7,8 @@ namespace Assets.Scripts
     public class PlayerController : MonoBehaviour
     {
         #region Variables
-        public System.Action OnReachedEndOfLevel;
+        public event Action OnReachedEndOfLevel;
+        public event Action<Collider> OnPlayerEnterGuardTrigger;
 
         public GameObject alert;
         public float RotationSpeed;
@@ -44,20 +46,33 @@ namespace Assets.Scripts
             DrawAlertArrows();
         }
 
-        private void OnTriggerEnter(Collider collider)
+        private void OnTriggerEnter(Collider col)
+        {
+            HandleFinishCollider(col);
+            HandleGuardTriggerColliders(col);
+        }
+
+        private void HandleFinishCollider(Collider col)
         {
             // If collider tag is finish then disable player and level Win UI
-            if (collider.tag == "Finish")
+            if (col.tag != "Finish") return;
+
+            Disable();
+            if (OnReachedEndOfLevel != null)
             {
-                Disable();
-                if (OnReachedEndOfLevel != null)
-                {
-                    OnReachedEndOfLevel();
-                }
+                OnReachedEndOfLevel();
             }
         }
 
-		void Disable()
+        private void HandleGuardTriggerColliders(Collider col)
+        {
+            if (col.tag != "GuardTrigger") return;
+            if (OnPlayerEnterGuardTrigger == null) return;
+
+            OnPlayerEnterGuardTrigger(col);
+        }
+
+        void Disable()
 		{
 			// Disables player when the OnGuardCaughtPlayer action is called from guard script
 			_isDisabled = true;
