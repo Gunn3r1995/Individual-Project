@@ -19,8 +19,6 @@ namespace Assets.Scripts
 		public GameObject Player;
 	    private PlayerController _playerController;
 		public bool AutoTargetPlayer;
-		//public enum State { Patrol, Alert, Investigate, Chase }
-		//public GuardUtil.State state;
 
 		private AStar.Grid _grid;
 		private GridAgent _gridAgent;
@@ -161,8 +159,8 @@ namespace Assets.Scripts
 			_patrolling = true;
 			print("Patrolling");
 
-			// Goto first waypoint
-			_gridAgent.Speed = PatrolSpeed;
+            // Goto first waypoint
+            _gridAgent.Speed = PatrolSpeed;
 			_gridAgent.SetDestination(transform.position, Waypoints[_waypointIndex].transform.position);
 
 			while (GuardUtil.state == GuardUtil.State.Patrol)
@@ -200,8 +198,10 @@ namespace Assets.Scripts
 			print("Alert");
 			_alerted = true;
 
-			// Set alert spot to players location
-            if(GuardUtil.CanSeePlayer(_fov)) _alertSpot = Player.transform.position;
+            //if (OnEnableStateUi != null) OnEnableStateUi(new GameObject());
+
+            // Set alert spot to players location
+            if (GuardUtil.CanSeePlayer(_fov)) _alertSpot = Player.transform.position;
 
             //var sound = Resources.Load<AudioClip>("Voices/Huh_what_was_that");
             print("Playing Sound");
@@ -252,8 +252,7 @@ namespace Assets.Scripts
 			_investigating = true;
 			var timer = 0.0f;
 
-
-		    var investLastPos = lastPos;
+            var investLastPos = lastPos;
 			// Generate first waypoint and save the position
 			var targetPosition = GuardUtil.CreateRandomWalkablePosition(_alertSpot, WanderRadius, ref investLastPos, _grid);
 
@@ -313,8 +312,8 @@ namespace Assets.Scripts
 			print("Chase");
 			_chasing = true;
 
-			var timer = 0f;
-		    var GoingToLastPos = false;
+            var timer = 0f;
+		    var goingToLastPos = false;
 
 			lastPos = Player.transform.position;
 			transform.LookAt(lastPos);
@@ -329,16 +328,16 @@ namespace Assets.Scripts
 			    if (GuardUtil.CanSeePlayer(_fov))
 			    {
                     _gridAgent.StopAllCoroutines();
-			        GoingToLastPos = false;
+			        goingToLastPos = false;
 			        lastPos = Player.transform.position;
 			        _gridAgent.StraightToDestination(Player.transform.position);
 			    } else
 			    {
-			        if (!GoingToLastPos)
+			        if (!goingToLastPos)
 			        {
 			            print("Cannot see player");
 			            _gridAgent.SetDestination(transform.position, lastPos);
-			            GoingToLastPos = true;
+			            goingToLastPos = true;
 			        }
 
 			        if (_gridAgent.HasPathFinished)

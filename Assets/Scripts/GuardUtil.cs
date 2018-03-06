@@ -9,13 +9,12 @@ namespace Assets.Scripts
         public static event Action OnGuardCaughtPlayer;
 
         public enum State { Patrol, Alert, Investigate, Chase }
-
         public State state;
 
         /// <summary>
         /// Calls OnGuardCaughtPlayer action methods if any methods are attached
         /// </summary>
-        public void GuardOnCaughtPlayer() {
+        public static void GuardOnCaughtPlayer() {
             if (OnGuardCaughtPlayer != null)
             {
                 OnGuardCaughtPlayer();
@@ -168,5 +167,6 @@ namespace Assets.Scripts
 
             Gizmos.DrawLine(previousPosition, startPosition);
         }
+
     }
 }

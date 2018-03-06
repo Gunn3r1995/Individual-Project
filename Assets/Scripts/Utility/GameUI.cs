@@ -1,20 +1,25 @@
-﻿using JetBrains.Annotations;
+﻿using System.Linq;
+using JetBrains.Annotations;
 using UnityEngine;
 
-namespace Assets.Scripts
+namespace Assets.Scripts.Utility
 {
     public class GameUI : MonoBehaviour
     {
         public GameObject GameLoseUi;
         public GameObject GameWinUi;
-        public Texture AlertedTexture;
+        public GameObject StateAlert;
+        public GameObject StateInvestigate;
+        public GameObject StateChase;
         private bool _gameIsOver;
+        private GuardUtil[] _guardUtils;
 
         [UsedImplicitly]
         private void Start()
         {
             GuardUtil.OnGuardCaughtPlayer += ShowGameLoseUi;
             FindObjectOfType<PlayerController>().OnReachedEndOfLevel += ShowGameWinUi;
+            _guardUtils = FindObjectsOfType<GuardUtil>();
         }
 
         [UsedImplicitly]
@@ -26,7 +31,9 @@ namespace Assets.Scripts
                 {
                     FindObjectOfType<LevelManager>().ReloadCurrentScene();
                 }
+
             }
+            EnableStateUi();
         }
 
         private void ShowGameWinUi()
@@ -47,6 +54,38 @@ namespace Assets.Scripts
             Cursor.visible = true;
             GuardUtil.OnGuardCaughtPlayer -= ShowGameLoseUi;
             FindObjectOfType<PlayerController>().OnReachedEndOfLevel -= ShowGameWinUi;
+        }
+
+        private void DisableAllStateUi()
+        {
+            if(StateAlert != null) StateAlert.SetActive(false);
+            if(StateInvestigate != null) StateInvestigate.SetActive(false);
+            if(StateChase != null) StateChase.SetActive(false);
+        }
+
+        private void EnableStateUi()
+        {
+            var largestVal = _guardUtils.Select(guardUtil => (int) guardUtil.state).Concat(new[] {0}).Max();
+
+            DisableAllStateUi();
+            switch (largestVal)
+            {
+                case (int)GuardUtil.State.Patrol:
+                    DisableAllStateUi();
+                    break;
+                case (int)GuardUtil.State.Alert:
+                    if(StateAlert != null) StateAlert.SetActive(true);
+                    break;
+                case (int)GuardUtil.State.Investigate:
+                    if (StateInvestigate != null) StateInvestigate.SetActive(true);
+                    break;
+                case (int)GuardUtil.State.Chase:
+                    if (StateChase != null) StateChase.SetActive(true);
+                    break;
+                default:
+                    DisableAllStateUi();
+                    break;
+            }
         }
     }
 }

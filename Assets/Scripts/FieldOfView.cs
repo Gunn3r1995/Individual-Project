@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using JetBrains.Annotations;
 
 namespace Assets.Scripts
 {
@@ -22,6 +23,7 @@ namespace Assets.Scripts
         [HideInInspector]
         public List<Transform> VisibleGuards = new List<Transform>();
 
+        [UsedImplicitly]
         private void Start()
         {
             StartCoroutine(FindTargetsWithDelay(LookDelay));
