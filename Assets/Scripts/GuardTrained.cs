@@ -355,6 +355,7 @@ namespace Assets.Scripts
                     {
                         if (!blockedByObstacle)
                         {
+                            print("Going around obstacle");
                             blockedByObstacle = true;
                             _gridAgent.SetDestination(transform.position, Player.transform.position);
                         }
@@ -382,35 +383,81 @@ namespace Assets.Scripts
                     {
                         if (!goingToLastPosition)
 						{
+						    print("Going to last forseen sighting");
                             goingToLastPosition = true;
                             _gridAgent.SetDestination(transform.position, _lastPosTracked);
 						}
 
+                        var tempTimer = 0.0f;
                         while (goingToLastPosition)
-						{
-							goingToLastPosition &= (!_gridAgent.HasPathFinished && Vector3.Distance(transform.position, _lastPosTracked) > 1.0f);
+                        {
+                            tempTimer += Time.deltaTime;
+
+                            if (_gridAgent.HasPathFinished)
+                            {
+                                _alertSpot = _lastPos;
+                                _gridAgent.StopMoving();
+                                GuardUtil.state = GuardUtil.State.Investigate;
+                                break;
+                            }
+
+                            if (tempTimer >= InvestigateSpotTime)
+                            {
+                                print("Chase time up");
+                                _alertSpot = _lastPos;
+                                _gridAgent.StopMoving();
+                                GuardUtil.state = GuardUtil.State.Investigate;
+                                goingToLastPosition = false;
+                                break;
+                            }
+
                             if (GuardUtil.CanSeePlayer(_fov) || GuardUtil.CanHearPlayer(_hearing)) {
 								_gridAgent.StopAllCoroutines();
                                 goingToLastPosition = false;
+                                break;
                             }
+
 							yield return null;
 						}
                     } else {
 						if (!goingToLastPosition)
 						{
+                            print("Going to last sighting");
 							goingToLastPosition = true;
                             _gridAgent.SetDestination(transform.position, _lastPos);
 						}
 
-						while (goingToLastPosition)
-						{
-                            goingToLastPosition &= (!_gridAgent.HasPathFinished && Vector3.Distance(transform.position, _lastPos) > 1.0f);
-							if (GuardUtil.CanSeePlayer(_fov) || GuardUtil.CanHearPlayer(_hearing))
+                        var tempTimer = 0.0f;
+                        while (goingToLastPosition)
+                        {
+                            tempTimer += Time.deltaTime;
+
+                            if (_gridAgent.HasPathFinished)
+                            {
+                                _alertSpot = _lastPos;
+                                _gridAgent.StopMoving();
+                                GuardUtil.state = GuardUtil.State.Investigate;
+                                break;
+                            }
+
+                            if (GuardUtil.CanSeePlayer(_fov) || GuardUtil.CanHearPlayer(_hearing))
 							{
 								_gridAgent.StopAllCoroutines();
 								goingToLastPosition = false;
-							}
-							yield return null;
+							    break;
+                            }
+
+                            if (tempTimer >= InvestigateSpotTime)
+                            {
+                                print("Chase time up");
+                                _alertSpot = _lastPos;
+                                _gridAgent.StopMoving();
+                                GuardUtil.state = GuardUtil.State.Investigate;
+                                goingToLastPosition = false;
+                                break;
+                            }
+
+                            yield return null;
 						}
                     }
                 }
@@ -437,6 +484,8 @@ namespace Assets.Scripts
             print("Finsihed Chasing");
 			_chasing = false;
 		}
+
+
 
 	    /// <summary>
 	    /// LookForPlayer:

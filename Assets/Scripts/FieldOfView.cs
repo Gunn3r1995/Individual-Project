@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
+//using UnityEditor;
 
 namespace Assets.Scripts
 {
@@ -72,5 +73,21 @@ namespace Assets.Scripts
             return new Vector3(Mathf.Sin(angleInDegrees * Mathf.Deg2Rad), 0, Mathf.Cos(angleInDegrees * Mathf.Deg2Rad));
         }
 
+        private void OnDrawGizmos()
+        {
+            //Handles.color = Color.blue;
+            //Handles.DrawWireArc(transform.position, Vector3.up, Vector3.forward, 360, ViewRadius);
+            //var viewAngleA = DirFromAngle(-ViewAngle / 2, false);
+            //var viewAngleB = DirFromAngle(ViewAngle / 2, false);
+
+            //Handles.DrawLine(transform.position, transform.position + viewAngleA * ViewRadius);
+            //Handles.DrawLine(transform.position, transform.position + viewAngleB * ViewRadius);
+
+            //Handles.color = Color.red;
+            //foreach (var visibleTarget in VisibleTargets)
+            //{
+            //    Handles.DrawLine(transform.position, visibleTarget.transform.position);
+            //}
+        }
     }
 }

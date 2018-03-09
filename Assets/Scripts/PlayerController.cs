@@ -24,11 +24,10 @@ namespace Assets.Scripts
         {
             // Add Disable method call to OnGuardCaughtPlayer action
             GuardUtil.OnGuardCaughtPlayer += Disable;
-            //GuardTrained.OnGuardCaughtPlayer += Disable;
 
 			// Get all guard game objects and other assets
 			guardsAlerts = new List<GuardAlert>();
-            foreach (GameObject guard in GameObject.FindGameObjectsWithTag("Guard"))
+            foreach (var guard in GameObject.FindGameObjectsWithTag("Guard"))
             {
                 guardsAlerts.Add(
                     new GuardAlert(guard, 
@@ -48,12 +47,15 @@ namespace Assets.Scripts
 
         private void OnTriggerEnter(Collider col)
         {
+            print("Triggered!");
+
             HandleFinishCollider(col);
             HandleGuardTriggerColliders(col);
         }
 
         private void HandleFinishCollider(Collider col)
         {
+
             // If collider tag is finish then disable player and level Win UI
             if (col.tag != "Finish") return;
 

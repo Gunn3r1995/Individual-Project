@@ -15,6 +15,9 @@ MonoBehaviour:
   - pbShowMover
   - pbIconGUI
   - pbDefaultOpenInDockableWindow
+  - pb_SmoothingGroupEditor::m_ShowPreview
+  - pb_SmoothingGroupEditor::m_DrawNormals
+  - pb_SmoothingGroupEditor::m_PreviewDither
   m_Int_keys:
   - pbHandleAlignment
   - pbDefaultEditLevel
@@ -23,14 +26,18 @@ MonoBehaviour:
   m_Float_keys:
   - pbEditorScroll.x
   - pbEditorScroll.y
-  m_String_keys: []
+  - pb_SmoothingGroupEditor::m_PreviewOpacity
+  m_String_keys:
+  - pbCurrentMaterialPalette
   m_Color_keys: []
   m_Material_keys: []
-  m_Bool_values: 010101
+  m_Bool_values: 010101010000
   m_Int_values: 00000000000000000000000001000000
   m_Float_values:
   - 0
-  - 47
-  m_String_values: []
+  - 0
+  - 0.5
+  m_String_values:
+  - Assets/ProCore/ProBuilder/Data/Default Material Palette.asset
   m_Color_values: []
   m_Material_values: []
