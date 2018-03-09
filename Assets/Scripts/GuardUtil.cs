@@ -22,7 +22,7 @@ namespace Assets.Scripts
         }
 
         /// <summary>
-        /// When player is in sight for longer than "timeToSpotPlayer" variable change state to alert
+        /// When player is in sight for longer than "timeToSpotPlayer" variable change state to alert.
         /// </summary>
         /// <param name="fov"></param>
         /// <param name="playerVisibleTimer"></param>
@@ -38,14 +38,57 @@ namespace Assets.Scripts
         }
 
         /// <summary>
-        /// Returns true if can see player (No Time Restraints)
+        /// When player is in sight for longer than "timeToHearPlayer" variable change state to alert.
         /// </summary>
-        /// <param name="fov"></param>
-        /// <returns></returns>
+        /// <param name="hearing">Hearing.</param>
+        /// <param name="playerHearedTimer">Player heared timer.</param>
+        /// <param name="timeToHearPlayer">Time to hear player.</param>
+        public void ListenForPlayer(Hearing hearing, ref float playerHearedTimer, float timeToHearPlayer) {
+            if (hearing.HeardTargets.Count > 0) playerHearedTimer += Time.deltaTime;
+            else playerHearedTimer -= Time.deltaTime;
+
+            playerHearedTimer = Mathf.Clamp(playerHearedTimer, 0, timeToHearPlayer);
+            if (playerHearedTimer >= timeToHearPlayer) state = GuardUtil.State.Alert;
+        }
+
+        /// <summary>
+        /// Return true if can see the player.
+        /// </summary>
+        /// <returns><c>true</c>, if see player was caned, <c>false</c> otherwise.</returns>
+        /// <param name="fov">Fov.</param>
         public static bool CanSeePlayer(FieldOfView fov)
         {
             return fov.VisibleTargets.Count > 0;
         }
+
+		/// <summary>
+		/// return true if can hear the player.
+		/// </summary>
+		/// <returns><c>true</c>, if hear player was caned, <c>false</c> otherwise.</returns>
+		/// <param name="hearing">Hearing.</param>
+        public static bool CanHearPlayer(Hearing hearing)
+        {
+            return hearing.HeardTargets.Count > 0;
+        }
+
+        /// <summary>
+        /// Returns true if blocked by obstacle
+        /// </summary>
+        /// <returns><c>true</c>, if blocked by obstacle was ised, <c>false</c> otherwise.</returns>
+        /// <param name="currentPosition">Current position.</param>
+        /// <param name="targetPosition">Target position.</param>
+        /// <param name="obstacles">Obstacles.</param>
+		public static bool IsBlockedByObstacle(Vector3 currentPosition, Vector3 targetPosition, LayerMask obstacles)
+		{
+			var direction = (targetPosition - currentPosition).normalized;
+			var distance = Vector3.Distance(currentPosition, targetPosition);
+
+			if (Physics.Raycast(currentPosition, direction, distance, obstacles))
+			{
+				return true;
+			}
+			return false;
+		}
 
         /// <summary>
         /// Creates a randomly generated "walkable" vector3 position. <para />
@@ -167,6 +210,5 @@ namespace Assets.Scripts
 
             Gizmos.DrawLine(previousPosition, startPosition);
         }
-
     }
 }

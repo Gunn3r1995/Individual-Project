@@ -5,7 +5,8 @@ using System.Threading;
 
 namespace Assets.Scripts.AStar
 {
-    public class PathRequestManager : MonoBehaviour {
+    public class PathRequestManager : MonoBehaviour
+    {
 
         Queue<PathResult> results = new Queue<PathResult>();
 
@@ -51,6 +52,23 @@ namespace Assets.Scripts.AStar
                 results.Enqueue(result);
             }
         }
+
+		public static void RequestCalculatePath(PathRequest request)
+		{
+			ThreadStart threadStart = delegate
+			{
+                instance.pathfinding.FindPath(request, instance.FinishedProcessingCalculatePath);
+			};
+			threadStart.Invoke();
+		}
+
+		public void FinishedProcessingCalculatePath(PathResult result)
+		{
+			lock (results)
+			{
+				results.Enqueue(result);
+			}
+		}
     }
 }
 

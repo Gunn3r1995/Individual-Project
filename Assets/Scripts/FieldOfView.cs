@@ -51,6 +51,7 @@ namespace Assets.Scripts
 
         private IEnumerable<Transform> LocateTargetsWithinSphere(Collider[] targetsWithinSphere)
         {
+            var pos = transform.position;
             return (
                 from targetCollider 
                 in targetsWithinSphere
@@ -58,7 +59,7 @@ namespace Assets.Scripts
                 let angleToTarget = Vector3.Angle(transform.forward, directionToTarget)
                 let distanceToTarget = Vector3.Distance(transform.position, targetCollider.transform.position)
                 where angleToTarget < ViewAngle / 2
-                where !Physics.Raycast(transform.position, directionToTarget, distanceToTarget, ObstacleMask)
+                where !Physics.Raycast(transform.position + Vector3.up * 2, directionToTarget, distanceToTarget, ObstacleMask)
                 select targetCollider.transform).ToList();
         }
 

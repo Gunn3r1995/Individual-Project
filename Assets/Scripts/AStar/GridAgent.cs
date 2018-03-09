@@ -1,6 +1,7 @@
 ﻿using System.Collections;
- using JetBrains.Annotations;
- using UnityEngine;
+using System.Collections.Generic;
+using JetBrains.Annotations;
+using UnityEngine;
 using UnityStandardAssets.Characters.ThirdPerson;
 
 namespace Assets.Scripts.AStar
@@ -22,10 +23,14 @@ namespace Assets.Scripts.AStar
             _character = GetComponent<ThirdPersonCharacter>();
         }
 
-
         public void SetDestination(Vector3 currentPosition, Vector3 targetPosition)
         {
+            print("Setting Destinaton");
             HasPathFinished = false;
+
+            if (_lastRoutine != null)
+                StopAllCoroutines();
+            
             PathRequestManager.RequestPath(new PathRequest(currentPosition, targetPosition, OnPathFound));
         }
 
@@ -60,11 +65,9 @@ namespace Assets.Scripts.AStar
                 StopAllCoroutines();
 		}
 
-
         [UsedImplicitly]
         private IEnumerator FollowPath()
         {
-            print("STARTED FOLLOWING PATH");
             var currentWaypoint = _path[0];
 
             while (true)
@@ -98,9 +101,6 @@ namespace Assets.Scripts.AStar
             _character.Move((target - transform.position).normalized * Speed, false, false);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
         public void OnDrawGizmos()
         {
             if (!PathFound()) return;

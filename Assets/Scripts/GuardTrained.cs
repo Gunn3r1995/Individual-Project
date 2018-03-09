@@ -9,12 +9,18 @@ namespace Assets.Scripts
 {
 	public class GuardTrained : MonoBehaviour
 	{
+		//TODO Alter CanSeePlayer for using transform from array
+		//TODO Alter CanHearPlayer for using transform from array
+
+        //TODO Memory of last locations
+        //TODO If already seen player then quicker reaction time (More Alerted)
+
 		#region Variables
 
-        [HideInInspector]
+		[HideInInspector]
 		public GuardUtil GuardUtil;
 
-		private FieldOfView _fov;
+
 		private AudioSource _audioSource;
 		public GameObject Player;
 	    private PlayerController _playerController;
@@ -25,13 +31,20 @@ namespace Assets.Scripts
 	    public bool Disabled { get; set; }
 	    public Collider[] Triggers;
 
-        #region Sight
+		#region Sight
+		private FieldOfView _fov;
         public float TimeToSpotPlayer = 0.5f;
 		private float _playerVisibleTimer;
-		#endregion
+        #endregion
 
-		#region Patrol
-		public GameObject[] Waypoints;
+        #region Hearing
+        private Hearing _hearing;
+        public float TimeToHearPlayer = 0.2f;
+        private float _playerHearedTimer;
+        #endregion
+
+        #region Patrol
+        public GameObject[] Waypoints;
 		public bool RandomWaypoints;
 		public float PatrolSpeed = 0.75f;
 		public float PatrolWaitTime = 3.0f;
@@ -41,10 +54,6 @@ namespace Assets.Scripts
 		#endregion
 
 		#region Alert
-		//public Transform AlertGroup01;
-		//public Transform AlertGroup02;
-		//public Transform AlertGroup03;
-
 		public float AlertReactionTime = 2.0f;
 
 		private Vector3 _alertSpot;
@@ -66,8 +75,8 @@ namespace Assets.Scripts
 		private bool _chasing;
         #endregion
 
-	    private Vector3 lastPos;
-
+	    private Vector3 _lastPos;
+        private Vector3 _lastPosTracked;
 
         public AudioClip TestAudioClip;
 
@@ -79,6 +88,7 @@ namespace Assets.Scripts
 	        if (GetComponent<GuardUtil>() == null) gameObject.AddComponent<GuardUtil>();
 	        GuardUtil = GetComponent<GuardUtil>();
 	        _fov = GetComponent<FieldOfView>();
+            _hearing = GetComponent<Hearing>();
 	        _grid = FindObjectOfType<AStar.Grid>();
 	        _gridAgent = GetComponent<GridAgent>();
 	        _audioSource = GetComponent<AudioSource>();
@@ -100,7 +110,7 @@ namespace Assets.Scripts
 	        if (Triggers.Length > 0)
 	        {
 	            FindObjectOfType<PlayerController>().OnPlayerEnterGuardTrigger += TriggerAction;
-	            if (Triggers.Length > 0) Disabled = true;
+	            Disabled |= Triggers.Length > 0;
             }
 	    }
 
@@ -122,7 +132,7 @@ namespace Assets.Scripts
 	        if (Disabled)
 	        {
 	            GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
-	            if (GuardUtil.CanSeePlayer(_fov)) Disabled = false;
+	            Disabled &= (!GuardUtil.CanSeePlayer(_fov) && !GuardUtil.CanHearPlayer(_hearing));
 	        }
             if (!Disabled) Fsm();
 		}
@@ -133,21 +143,19 @@ namespace Assets.Scripts
 			{
 				case GuardUtil.State.Patrol:
 					GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
+                    GuardUtil.ListenForPlayer(_hearing, ref _playerHearedTimer, TimeToHearPlayer);
 					if (!_patrolling)
 						StartCoroutine(Patrol());
 					break;
 				case GuardUtil.State.Alert:
-                    print("FSM alert");
                     if (!_alerted)
 						StartCoroutine(Alert());
 					break;
 				case GuardUtil.State.Investigate:
-                    print("FSM: Investigate");
                     if (!_investigating)
 						StartCoroutine(Investigate());
 					break;
 				case GuardUtil.State.Chase:
-                    print("FSM: chase at speed: " + _gridAgent.Speed);
                     if (!_chasing)
 						StartCoroutine(Chase());
 					break;
@@ -202,6 +210,7 @@ namespace Assets.Scripts
 
             // Set alert spot to players location
             if (GuardUtil.CanSeePlayer(_fov)) _alertSpot = Player.transform.position;
+            else if (GuardUtil.CanHearPlayer(_hearing)) _alertSpot = Player.transform.position;
 
             //var sound = Resources.Load<AudioClip>("Voices/Huh_what_was_that");
             print("Playing Sound");
@@ -224,7 +233,7 @@ namespace Assets.Scripts
 				print("Alerted");
 
 			    // If can se player while alerted go straight to chase
-			    if (GuardUtil.CanSeePlayer(_fov))
+                if (GuardUtil.CanSeePlayer(_fov) || GuardUtil.CanHearPlayer(_hearing))
 			    {
 			        GuardUtil.state = GuardUtil.State.Chase;
 			    } else if (_gridAgent.HasPathFinished)
@@ -252,9 +261,16 @@ namespace Assets.Scripts
 			_investigating = true;
 			var timer = 0.0f;
 
-            var investLastPos = lastPos;
-			// Generate first waypoint and save the position
-			var targetPosition = GuardUtil.CreateRandomWalkablePosition(_alertSpot, WanderRadius, ref investLastPos, _grid);
+            var investLastPos = _lastPos;
+            // Generate first waypoint and save the position
+            var direction = (transform.forward * 5 - transform.position).normalized;
+            var distance = Vector3.Distance(transform.position, _lastPos + transform.forward * 5);
+
+            Vector3 targetPosition;
+            if (!Physics.Raycast(transform.position, direction, distance, _fov.ObstacleMask))
+                targetPosition = _lastPos + transform.forward * 5;
+            else 
+                targetPosition = GuardUtil.CreateRandomWalkablePosition(_alertSpot, WanderRadius, ref investLastPos, _grid);
 
 			// Go to first waypoint
 			_gridAgent.Speed = InvestigateSpeed;
@@ -267,8 +283,9 @@ namespace Assets.Scripts
 				timer += Time.deltaTime;
 
 				// If can se player while investigating go straight to chase
-			    if (GuardUtil.CanSeePlayer(_fov))
+                if (GuardUtil.CanSeePlayer(_fov) || GuardUtil.CanHearPlayer(_hearing))
 			    {
+                    _lastPos = Player.transform.position;
 			        GuardUtil.state = GuardUtil.State.Chase;
                     _gridAgent.StopMoving();
                     break;
@@ -311,66 +328,112 @@ namespace Assets.Scripts
 		{
 			print("Chase");
 			_chasing = true;
+			_lastPos = Player.transform.position;
+			_lastPosTracked = Player.transform.position + Player.transform.forward * 5.0f;
 
-            var timer = 0f;
-		    var goingToLastPos = false;
-
-			lastPos = Player.transform.position;
-			transform.LookAt(lastPos);
-			_gridAgent.SetDestination(transform.position, lastPos);
-		    _gridAgent.Speed = ChaseSpeed;
+            var timer = 0.0f;
+            var blockedByObstacle = false;
+		    var goingToLastPosition = false;
 
 			while (GuardUtil.state == GuardUtil.State.Chase)
 			{
 				timer += Time.deltaTime;
 			    _gridAgent.Speed = ChaseSpeed;
-                
-			    if (GuardUtil.CanSeePlayer(_fov))
-			    {
-                    _gridAgent.StopAllCoroutines();
-			        goingToLastPos = false;
-			        lastPos = Player.transform.position;
-			        _gridAgent.StraightToDestination(Player.transform.position);
-			    } else
-			    {
-			        if (!goingToLastPos)
-			        {
-			            print("Cannot see player");
-			            _gridAgent.SetDestination(transform.position, lastPos);
-			            goingToLastPos = true;
-			        }
 
-			        if (_gridAgent.HasPathFinished)
-			        {
-			            print("Got to last seen position");
-			            _alertSpot = lastPos;
-			            GuardUtil.state = GuardUtil.State.Investigate;
-                        break;
-			        }
+                if (GuardUtil.CanSeePlayer(_fov) || GuardUtil.CanHearPlayer(_hearing))
+                {
+                    _lastPos = Player.transform.position;
+                    _lastPosTracked = Player.transform.position + Player.transform.forward * 5.0f;
+                    goingToLastPosition = false;
+
+                    if (!GuardUtil.IsBlockedByObstacle(transform.position, Player.transform.position, _fov.ObstacleMask))
+                    {
+                        _gridAgent.StopAllCoroutines();
+                        _gridAgent.StraightToDestination(Player.transform.position);
+                    }
+                    else
+                    {
+                        if (!blockedByObstacle)
+                        {
+                            blockedByObstacle = true;
+                            _gridAgent.SetDestination(transform.position, Player.transform.position);
+                        }
+
+                        while (blockedByObstacle)
+                        {
+                            if (_gridAgent.HasPathFinished || Vector3.Distance(transform.position, _lastPos) <= 1.0f)
+                            {
+                                blockedByObstacle = false;
+                                break;
+                            }
+                            if (!GuardUtil.IsBlockedByObstacle(transform.position, Player.transform.position, _fov.ObstacleMask))
+                            {
+                                _gridAgent.StopAllCoroutines();
+                                blockedByObstacle = false;
+                                break;
+                            }
+                            yield return null;
+                        }
+                    }
+                }
+                else
+                {
+                    if (!GuardUtil.IsBlockedByObstacle(transform.position, _lastPosTracked, _fov.ObstacleMask))
+                    {
+                        if (!goingToLastPosition)
+						{
+                            goingToLastPosition = true;
+                            _gridAgent.SetDestination(transform.position, _lastPosTracked);
+						}
+
+                        while (goingToLastPosition)
+						{
+							goingToLastPosition &= (!_gridAgent.HasPathFinished && Vector3.Distance(transform.position, _lastPosTracked) > 1.0f);
+                            if (GuardUtil.CanSeePlayer(_fov) || GuardUtil.CanHearPlayer(_hearing)) {
+								_gridAgent.StopAllCoroutines();
+                                goingToLastPosition = false;
+                            }
+							yield return null;
+						}
+                    } else {
+						if (!goingToLastPosition)
+						{
+							goingToLastPosition = true;
+                            _gridAgent.SetDestination(transform.position, _lastPos);
+						}
+
+						while (goingToLastPosition)
+						{
+                            goingToLastPosition &= (!_gridAgent.HasPathFinished && Vector3.Distance(transform.position, _lastPos) > 1.0f);
+							if (GuardUtil.CanSeePlayer(_fov) || GuardUtil.CanHearPlayer(_hearing))
+							{
+								_gridAgent.StopAllCoroutines();
+								goingToLastPosition = false;
+							}
+							yield return null;
+						}
+                    }
                 }
 
                 if (Vector3.Distance(transform.position, Player.transform.position) <= 1.0f)
 				{
+					_gridAgent.SetDestination(transform.position, GuardUtil.CreateRandomWalkablePosition(transform.position, 5.0f, _grid));
 					_gridAgent.StopMoving();
 					GuardUtil.GuardOnCaughtPlayer();
 				}
-				//else if (Vector3.Distance(transform.position, Player.transform.position) >= 20f)
-				//{
-    //                print("");
-				//	GuardUtil.state = GuardUtil.State.Investigate;
-				//	break;
-				//}
 
 				if (timer >= ChaseTime)
 				{
                     print("Chase time up");
-				    _alertSpot = lastPos;
+				    _alertSpot = _lastPos;
+                    _gridAgent.StopMoving();
 					GuardUtil.state = GuardUtil.State.Investigate;
 					break;
 				}
 
 				yield return null;
 			}
+
             print("Finsihed Chasing");
 			_chasing = false;
 		}
@@ -406,7 +469,7 @@ namespace Assets.Scripts
 
 	        while (timer <= waitTime)
 	        {
-	            if (GuardUtil.CanSeePlayer(_fov))
+                if (GuardUtil.CanSeePlayer(_fov) || GuardUtil.CanHearPlayer(_hearing))
 	                GuardUtil.state = GuardUtil.State.Chase;
 
 	            timer += Time.deltaTime;
@@ -418,7 +481,5 @@ namespace Assets.Scripts
 		{
             GuardUtil.DrawWaypointGizmos(Waypoints);
 		}
-
-
     }
 }
