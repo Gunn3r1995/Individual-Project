@@ -3,10 +3,10 @@
 namespace Assets.Scripts.AStar
 {
     public class Node : IHeapItem<Node> {
-        public bool walkable;
+        public bool Walkable;
         public Vector3 WorldPosition;
-        public int gridX;
-        public int gridY;
+        public int GridX;
+        public int GridY;
 
         public int GCost;
         public int HCost;
@@ -15,30 +15,33 @@ namespace Assets.Scripts.AStar
             get { return GCost + HCost; }
         }
 
+        public int HeapIndex { get; set; }
         public Node Parent;
-        private int heapIndex;
 
-        public Node(bool _walkable, Vector3 _worldPosition, int _gridX, int _gridY)
+        /// <summary>
+        /// Node Constructor
+        /// </summary>
+        /// <param name="walkable"></param>
+        /// <param name="worldPosition"></param>
+        /// <param name="gridX"></param>
+        /// <param name="gridY"></param>
+        public Node(bool walkable, Vector3 worldPosition, int gridX, int gridY)
         {
-            walkable = _walkable;
-            WorldPosition = _worldPosition;
-            gridX = _gridX;
-            gridY = _gridY;
+            Walkable = walkable;
+            WorldPosition = worldPosition;
+            GridX = gridX;
+            GridY = gridY;
         }
 
-        public int HeapIndex
+        /// <summary>
+        /// Compares supplied nodes FCost and HCost to current node
+        /// </summary>
+        /// <param name="node"></param>
+        /// <returns></returns>
+        public int CompareTo(Node node)
         {
-            get { return heapIndex; }
-            set { heapIndex = value; }
-        }
-
-        public int CompareTo(Node nodeToCompare)
-        {
-            int compare = FCost.CompareTo(nodeToCompare.FCost);
-            if (compare == 0)
-            {
-                compare = HCost.CompareTo(nodeToCompare.HCost);
-            }
+            var compare = FCost.CompareTo(node.FCost);
+            if (compare == 0) compare = HCost.CompareTo(node.HCost);
             return -compare;
         }
     }

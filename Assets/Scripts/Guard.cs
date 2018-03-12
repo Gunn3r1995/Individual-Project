@@ -162,7 +162,7 @@ namespace Assets.Scripts
 
             // Set the destination to the alert spot
             transform.LookAt(_alertSpot);
-			_gridAgent.SetDestination(transform.position, _alertSpot);
+			_gridAgent.RequestSetDestination(transform.position, _alertSpot);
 
             // Stop moving and wait for 'AlertReactionTime' amount
             _gridAgent.StopMoving();
@@ -177,7 +177,7 @@ namespace Assets.Scripts
                     // On Alert Destination Reached
 
 					// Work around to force stop the agent
-                    _gridAgent.SetDestination(transform.position, GuardUtil.CreateRandomWalkablePosition(transform.position, 5.0f, _grid));
+                    _gridAgent.RequestSetDestination(transform.position, GuardUtil.CreateRandomWalkablePosition(transform.position, 5.0f, _grid));
 					_gridAgent.StopMoving();
 
                     // Wait for 'InvestigateSpotTime' amount while looking for the player
@@ -211,7 +211,7 @@ namespace Assets.Scripts
 
             // Go to first waypoint
             _gridAgent.Speed = InvestigateSpeed;
-            _gridAgent.SetDestination(transform.position, targetPosition);
+            _gridAgent.RequestSetDestination(transform.position, targetPosition);
 
             while(GuardUtil.state == GuardUtil.State.Investigate) {
                 // Add to time
@@ -228,7 +228,7 @@ namespace Assets.Scripts
                     targetPosition = GuardUtil.CreateRandomWalkablePosition(_alertSpot, WanderRadius, ref lastPos);
 
                     // Set the destination and stop moving work around
-                    _gridAgent.SetDestination(transform.position, targetPosition);
+                    _gridAgent.RequestSetDestination(transform.position, targetPosition);
                     _gridAgent.StopMoving();
 
                     // Wait at waypoint for 'InvestigateSpotTime' amount
@@ -261,7 +261,7 @@ namespace Assets.Scripts
 
             Vector3 laspPos = Player.transform.position;
 			transform.LookAt(laspPos);
-			_gridAgent.SetDestination(transform.position, laspPos);
+			_gridAgent.RequestSetDestination(transform.position, laspPos);
             _gridAgent.Speed = ChaseSpeed;
 
             while (GuardUtil.state == GuardUtil.State.Chase)
@@ -273,7 +273,7 @@ namespace Assets.Scripts
                     laspPos = Player.transform.position;
                     _gridAgent.StraightToDestination(Player.transform.position);
                 } else {
-                    _gridAgent.SetDestination(transform.position, laspPos);
+                    _gridAgent.RequestSetDestination(transform.position, laspPos);
                 }
 
                 if (Vector3.Distance(transform.position, Player.transform.position) <= 1.0f)

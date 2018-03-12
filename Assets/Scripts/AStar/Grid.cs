@@ -1,102 +1,147 @@
 ﻿using System.Collections.Generic;
+using JetBrains.Annotations;
 using UnityEngine;
 
 namespace Assets.Scripts.AStar
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// Grid creates a world of nodes to be used with A* Pathfinding Algorithm
+    /// </summary>
     public class Grid : MonoBehaviour
     {
         public bool DisplayGridGizmos;
         public LayerMask UnwalkableMask;
         public Vector2 GridWorldSize;
-        public float NodeRadius;
+        public float NodeRadius = 0.5f;
 
         public int MaxSize
         {
-            get { return gridSizeX * gridSizeY; }
+            get { return _gridSizeX * _gridSizeY; }
         }
 
-        private Node[,] grid;
-        private float nodeDiameter;
-        private int gridSizeX, gridSizeY;
+        private Node[,] _grid;
+        private float _nodeDiameter;
+        private int _gridSizeX, _gridSizeY;
 
+        [UsedImplicitly]
         private void Awake()
         {
-            nodeDiameter = NodeRadius * 2;
-            gridSizeX = Mathf.RoundToInt(GridWorldSize.x / nodeDiameter);
-            gridSizeY = Mathf.RoundToInt(GridWorldSize.y / nodeDiameter);
+            // World size parameters
+            _nodeDiameter = NodeRadius * 2;
+            _gridSizeX = Mathf.RoundToInt(GridWorldSize.x / _nodeDiameter);
+            _gridSizeY = Mathf.RoundToInt(GridWorldSize.y / _nodeDiameter);
+
             CreateGrid();
         }
 
+        /// <summary>
+        /// Creates a grid full of nodes
+        /// </summary>
         private void CreateGrid()
         {
-            grid = new Node[gridSizeX, gridSizeY];
-            Vector3 worldBottomLeft = transform.position - Vector3.right * GridWorldSize.x / 2 - Vector3.forward * GridWorldSize.y / 2;
+            // New Array of nodes
+            _grid = new Node[_gridSizeX, _gridSizeY];
+            // Calculate the bottom left of the grid
+            var bottomLeft = transform.position 
+                - Vector3.right * GridWorldSize.x / 2 
+                - Vector3.forward * GridWorldSize.y / 2;
 
-            for (int x = 0; x < gridSizeX; x++) {
-                for (int y = 0; y < gridSizeY; y++){
-                    Vector3 worldPoint = worldBottomLeft + Vector3.right * (x * nodeDiameter + NodeRadius) + Vector3.forward * (y * nodeDiameter + NodeRadius);
+            // loop each X,Y grid value
+            for (var x = 0; x < _gridSizeX; x++) {
+                for (var y = 0; y < _gridSizeY; y++){
+                    // Calculate world position
+                    var worldPosition = bottomLeft 
+                        + Vector3.right * (x * _nodeDiameter + NodeRadius) 
+                        + Vector3.forward * (y * _nodeDiameter + NodeRadius);
 
-                    bool walkable = !(Physics.CheckSphere(worldPoint, NodeRadius, UnwalkableMask));
-                    if (walkable)
-                    {
-                        //Check for ground
-                        Vector3 temp = worldPoint;
-                        temp.y += 2.0f;
-                        walkable = (Physics.Raycast(temp, -Vector3.up));
-                    }
-
-                    grid[x, y] = new Node(walkable, worldPoint, x, y);
+                    // Check for physical obstacles
+                    var walkable = !Physics.CheckSphere(worldPosition, NodeRadius, UnwalkableMask);
+                    // Check for empty ground
+                    if (walkable) walkable = CheckForGround(worldPosition, NodeRadius);
+                
+                    // Create Calculated node for grid position x,y
+                    _grid[x, y] = new Node(walkable, worldPosition, x, y);
                 }
             }
         }
 
+        /// <summary>
+        /// Check for hit on ground at 'worldPosition'
+        /// </summary>
+        /// <param name="worldPosition"></param>
+        /// <param name="radius"></param>
+        /// <returns>true if hits ground</returns>
+        public static bool CheckForGround(Vector3 worldPosition, float radius)
+        {
+            worldPosition.y += 1.0f;
+            return Physics.Raycast(worldPosition, -Vector3.up);
+        }
+
+        /// <summary>
+        /// Returns all the neighbours of the current node
+        /// </summary>
+        /// <param name="node"></param>
+        /// <returns></returns>
         public List<Node> GetNeighbours(Node node)
         {
-            List<Node> neighbours = new List<Node>();
-            for (int x = -1; x <= 1; x++)
+            var neighbours = new List<Node>();
+            for (var x = -1; x <= 1; x++)
             {
-                for (int y = -1; y <= 1; y++)
+                for (var y = -1; y <= 1; y++)
                 {
-                    if (x == 0 && y == 0)
-                    {
-                        continue;
-                    }
-                    int checkX = node.gridX + x;
-                    int checkY = node.gridY + y;
+                    // If current node continue
+                    if (x == 0 && y == 0) continue;
 
-                    if (checkX >= 0 && checkX < gridSizeX && checkY >= 0 && checkY < gridSizeY)
-                    {
-                        neighbours.Add(grid[checkX, checkY]);
-                    }
+                    // Calculate current neighbour position
+                    var neighbourX = node.GridX + x;
+                    var neighbourY = node.GridY + y;
+
+                    // Check neighbour x,y is within grid size and 
+                    if (neighbourX >= 0 && neighbourX < _gridSizeX && neighbourY >= 0 && neighbourY < _gridSizeY)
+                        neighbours.Add(_grid[neighbourX, neighbourY]);
                 }
             }
             return neighbours;
         }
 
+        /// <summary>
+        /// Calculates the grid position from a 'worldPosition'
+        /// </summary>
+        /// <param name="worldPosistion"></param>
+        /// <returns>Node</returns>
         public Node GetNodeFromWorldPoint(Vector3 worldPosistion){
-            float percentX = (worldPosistion.x + GridWorldSize.x/2) / GridWorldSize.x;
-            float percentY = (worldPosistion.z + GridWorldSize.y/2) / GridWorldSize.y;
-            percentX = Mathf.Clamp01(percentX);
-            percentY = Mathf.Clamp01(percentY);
+            // Reverse the world size calcualtions
+            var x = Mathf.RoundToInt((_gridSizeX - 1) * Mathf.Clamp01((worldPosistion.x + GridWorldSize.x / 2) / GridWorldSize.x));
+            var y = Mathf.RoundToInt((_gridSizeY - 1) * Mathf.Clamp01((worldPosistion.z + GridWorldSize.y / 2) / GridWorldSize.y));
 
-            int x = Mathf.RoundToInt((gridSizeX - 1) * percentX);
-            int y = Mathf.RoundToInt((gridSizeY - 1) * percentY);
-
-            return grid[x, y];
+            return _grid[x, y];
         }
 
+        [UsedImplicitly]
         private void OnDrawGizmos()
         {
+            // Draw wireframe of the grid size for easy editing
             Gizmos.DrawWireCube(transform.position, new Vector3(GridWorldSize.x,1, GridWorldSize.y));
+            // Draws all the nodes in the grid
+            HandleDrawGridNodes();
+        }
 
-            if (grid != null && DisplayGridGizmos)
+        /// <summary>
+        /// Handles the drawing of the nodes within the grid
+        /// </summary>
+        private void HandleDrawGridNodes()
+        {
+            // If no grid or DoNotDisplayGridGizmos then return
+            if (_grid == null || !DisplayGridGizmos) return;
+
+            foreach (var node in _grid)
             {
-                foreach (Node n in grid)
-                {
-                    Gizmos.color = (n.walkable) ? Color.white : Color.red;
-                    Gizmos.DrawCube(n.WorldPosition, Vector3.one * (nodeDiameter - 0.1f));
-                }
-            } 
+                // If walkable white, else red
+                Gizmos.color = (node.Walkable) ? Color.white : Color.red;
+                // Draw slightly smaller cube to differentiate between nodes
+                Gizmos.DrawCube(node.WorldPosition, Vector3.one * (_nodeDiameter - 0.1f));
+            }
         }
     }
 }

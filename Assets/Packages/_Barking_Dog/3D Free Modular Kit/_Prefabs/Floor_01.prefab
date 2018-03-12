@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 3349842}
   - component: {fileID: 2351466}
   - component: {fileID: 6586592}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: Floor_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -26,7 +26,7 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 416390}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: Floor_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -107,7 +107,7 @@ namespace Assets.Scripts
                 var randomPosition = CreateRandomPosition(origin, dist);
                 var newPositionNode = grid.GetNodeFromWorldPoint(randomPosition);
 
-                while (!newPositionNode.walkable)
+                while (!newPositionNode.Walkable)
                 {
                     randomPosition = CreateRandomPosition(origin, dist);
                     newPositionNode = grid.GetNodeFromWorldPoint(randomPosition);
@@ -140,7 +140,7 @@ namespace Assets.Scripts
                 var newPositionNode = grid.GetNodeFromWorldPoint(randomPosition);
                 var lastPositionNode = grid.GetNodeFromWorldPoint(lastPos);
 
-                while (!newPositionNode.walkable || Vector3.Distance(lastPositionNode.WorldPosition, newPositionNode.WorldPosition) <= 2.0f)
+                while (!newPositionNode.Walkable || Vector3.Distance(lastPositionNode.WorldPosition, newPositionNode.WorldPosition) <= 2.0f)
                 {
                     randomPosition = CreateRandomPosition(origin, dist);
                     newPositionNode = grid.GetNodeFromWorldPoint(randomPosition);

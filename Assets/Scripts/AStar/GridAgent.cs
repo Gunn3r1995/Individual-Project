@@ -23,22 +23,38 @@ namespace Assets.Scripts.AStar
             _character = GetComponent<ThirdPersonCharacter>();
         }
 
-        public void SetDestination(Vector3 currentPosition, Vector3 targetPosition)
+        /// <summary>
+        /// Requests the destination from current position to target position using A* pathfinding
+        /// </summary>
+        /// <param name="currentPosition"></param>
+        /// <param name="targetPosition"></param>
+        public void RequestSetDestination(Vector3 currentPosition, Vector3 targetPosition)
         {
-            print("Setting Destinaton");
+            // Has not finished path
             HasPathFinished = false;
 
+            // Stops all coroutines
             if (_lastRoutine != null)
                 StopAllCoroutines();
             
+            // Requests A* Pathfinding algorithm then callbacks OnPathFound once finished
             PathRequestManager.RequestPath(new PathRequest(currentPosition, targetPosition, OnPathFound));
         }
 
+        /// <summary>
+        /// Checks if path has been found
+        /// </summary>
+        /// <returns></returns>
         public bool PathFound()
         {
             return _path != null && _path.Length > 0;
         }
 
+        /// <summary>
+        /// Once path found start following path
+        /// </summary>
+        /// <param name="newPath"></param>
+        /// <param name="pathSuccessful"></param>
         public void OnPathFound(Vector3[] newPath, bool pathSuccessful)
         {
             // Path found: check if successful
@@ -54,9 +70,12 @@ namespace Assets.Scripts.AStar
                 StopAllCoroutines();
 
             // Start coroutine to follow path
-            _lastRoutine = StartCoroutine("FollowPath");
+            _lastRoutine = StartCoroutine(FollowPath(_path));
         }
 
+        /// <summary>
+        /// Stop moving character
+        /// </summary>
 		public void StopMoving()
 		{
 		    Speed = 0;
@@ -65,25 +84,36 @@ namespace Assets.Scripts.AStar
                 StopAllCoroutines();
 		}
 
+        /// <summary>
+        /// Follows the current path
+        /// </summary>
+        /// <returns></returns>
         [UsedImplicitly]
-        private IEnumerator FollowPath()
+        private IEnumerator FollowPath(Vector3[] path)
         {
-            var currentWaypoint = _path[0];
+            if (!PathFound()) yield return null;
 
-            while (true)
+            // Set initial waypoint to first index of path
+            var currentWaypoint = path[0];
+
+            while (!HasPathFinished)
             {
+                // Check if reached current waypoint destination
                 if (Vector3.Distance(transform.position, currentWaypoint) <= 0.2f)
                 {
                     _targetIndex++;
-                    if (_targetIndex >= _path.Length)
+                    // If reached last waypoint
+                    if (_targetIndex >= path.Length)
                     {
                         HasPathFinished = true;
                         _targetIndex = 0;
                         break;
                     }
-                    currentWaypoint = _path[_targetIndex];
+                    // Go to next waypoint
+                    currentWaypoint = path[_targetIndex];
                 }
 
+                // Move transform and character towards waypoint
 				transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, Speed * Time.deltaTime);
 				_character.Move((currentWaypoint - transform.position).normalized * Speed, false, false);
   
@@ -105,11 +135,12 @@ namespace Assets.Scripts.AStar
         {
             if (!PathFound()) return;
 
+            Gizmos.color = Color.blue;
             for (var i = _targetIndex; i < _path.Length; i++)
             {
-                Gizmos.color = Color.black;
-                Gizmos.DrawCube(_path[i], Vector3.one);
-
+                // Draw a cube for each waypoint not yet reached
+                Gizmos.DrawCube(_path[i], Vector3.one * 0.75f);
+                // Draw a line from each waypoint to another
                 Gizmos.DrawLine(i == _targetIndex ? transform.position : _path[i - 1], _path[i]);
             }
         }

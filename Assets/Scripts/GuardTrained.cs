@@ -169,7 +169,7 @@ namespace Assets.Scripts
 
             // Goto first waypoint
             _gridAgent.Speed = PatrolSpeed;
-			_gridAgent.SetDestination(transform.position, Waypoints[_waypointIndex].transform.position);
+			_gridAgent.RequestSetDestination(transform.position, Waypoints[_waypointIndex].transform.position);
 
 			while (GuardUtil.state == GuardUtil.State.Patrol)
 			{
@@ -187,7 +187,7 @@ namespace Assets.Scripts
 					}
 
 					// Setting the destination to next waypoint
-					_gridAgent.SetDestination(transform.position, Waypoints[_waypointIndex].transform.position);
+					_gridAgent.RequestSetDestination(transform.position, Waypoints[_waypointIndex].transform.position);
 
 					// Stop the guard for PatrolWaitTime amount of time
 					_gridAgent.StopMoving();
@@ -218,7 +218,7 @@ namespace Assets.Scripts
 
 			// Set the destination to the alert spot
 			transform.LookAt(_alertSpot);
-			_gridAgent.SetDestination(transform.position, _alertSpot);
+			_gridAgent.RequestSetDestination(transform.position, _alertSpot);
 
 			// Stop moving and wait for 'AlertReactionTime' amount
 			_gridAgent.StopMoving();
@@ -241,7 +241,7 @@ namespace Assets.Scripts
 					// On Alert Destination Reached
 
 					// Work around to force stop the agent
-					_gridAgent.SetDestination(transform.position, GuardUtil.CreateRandomWalkablePosition(transform.position, 5.0f, _grid));
+					_gridAgent.RequestSetDestination(transform.position, GuardUtil.CreateRandomWalkablePosition(transform.position, 5.0f, _grid));
 					_gridAgent.StopMoving();
 
 					// Wait for 'InvestigateSpotTime' amount while looking for the player
@@ -274,7 +274,7 @@ namespace Assets.Scripts
 
 			// Go to first waypoint
 			_gridAgent.Speed = InvestigateSpeed;
-			_gridAgent.SetDestination(transform.position, targetPosition);
+			_gridAgent.RequestSetDestination(transform.position, targetPosition);
 
 			while (GuardUtil.state == GuardUtil.State.Investigate)
 			{
@@ -299,7 +299,7 @@ namespace Assets.Scripts
 					targetPosition = GuardUtil.CreateRandomWalkablePosition(_alertSpot, WanderRadius, ref investLastPos);
 
 					// Set the destination and stop moving work around
-					_gridAgent.SetDestination(transform.position, targetPosition);
+					_gridAgent.RequestSetDestination(transform.position, targetPosition);
 					_gridAgent.StopMoving();
 
 					// Wait at waypoint for 'InvestigateSpotTime' amount
@@ -357,7 +357,7 @@ namespace Assets.Scripts
                         {
                             print("Going around obstacle");
                             blockedByObstacle = true;
-                            _gridAgent.SetDestination(transform.position, Player.transform.position);
+                            _gridAgent.RequestSetDestination(transform.position, Player.transform.position);
                         }
 
                         while (blockedByObstacle)
@@ -385,7 +385,7 @@ namespace Assets.Scripts
 						{
 						    print("Going to last forseen sighting");
                             goingToLastPosition = true;
-                            _gridAgent.SetDestination(transform.position, _lastPosTracked);
+                            _gridAgent.RequestSetDestination(transform.position, _lastPosTracked);
 						}
 
                         var tempTimer = 0.0f;
@@ -424,7 +424,7 @@ namespace Assets.Scripts
 						{
                             print("Going to last sighting");
 							goingToLastPosition = true;
-                            _gridAgent.SetDestination(transform.position, _lastPos);
+                            _gridAgent.RequestSetDestination(transform.position, _lastPos);
 						}
 
                         var tempTimer = 0.0f;
@@ -464,7 +464,7 @@ namespace Assets.Scripts
 
                 if (Vector3.Distance(transform.position, Player.transform.position) <= 1.0f)
 				{
-					_gridAgent.SetDestination(transform.position, GuardUtil.CreateRandomWalkablePosition(transform.position, 5.0f, _grid));
+					_gridAgent.RequestSetDestination(transform.position, GuardUtil.CreateRandomWalkablePosition(transform.position, 5.0f, _grid));
 					_gridAgent.StopMoving();
 					GuardUtil.GuardOnCaughtPlayer();
 				}

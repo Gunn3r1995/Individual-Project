@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Threading;
+using JetBrains.Annotations;
 
 namespace Assets.Scripts.AStar
 {
@@ -10,16 +11,17 @@ namespace Assets.Scripts.AStar
 
         Queue<PathResult> results = new Queue<PathResult>();
 
-        private static PathRequestManager instance;
-        private Pathfinding pathfinding;
+        private static PathRequestManager _instance;
+        private Pathfinding _pathfinding;
 
 
         private void Awake()
         {
-            instance = this;
-            pathfinding = GetComponent<Pathfinding>();
+            _instance = this;
+            _pathfinding = GetComponent<Pathfinding>();
         }
 
+        [UsedImplicitly]
         void Update()
         {
             if (results.Count > 0)
@@ -40,7 +42,7 @@ namespace Assets.Scripts.AStar
         {
             ThreadStart threadStart = delegate
             {
-                instance.pathfinding.FindPath(request, instance.FinishedProcessingPath);
+                _instance._pathfinding.FindPath(request, _instance.FinishedProcessingPath);
             };
             threadStart.Invoke();
         }
@@ -57,7 +59,7 @@ namespace Assets.Scripts.AStar
 		{
 			ThreadStart threadStart = delegate
 			{
-                instance.pathfinding.FindPath(request, instance.FinishedProcessingCalculatePath);
+                _instance._pathfinding.FindPath(request, _instance.FinishedProcessingCalculatePath);
 			};
 			threadStart.Invoke();
 		}
