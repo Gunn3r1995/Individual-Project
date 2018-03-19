@@ -1,5 +1,6 @@
 ﻿using System;
 ﻿using System.Collections.Generic;
+using JetBrains.Annotations;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -20,7 +21,8 @@ namespace Assets.Scripts
         private bool _isDisabled = false;
         #endregion
 
-        void Start()
+        [UsedImplicitly]
+        private void Start()
         {
             // Add Disable method call to OnGuardCaughtPlayer action
             GuardUtil.OnGuardCaughtPlayer += Disable;
@@ -37,6 +39,7 @@ namespace Assets.Scripts
             _rigidbody = GetComponent<Rigidbody>();
         }
 
+        [UsedImplicitly]
         private void Update()
         {
             // If disabled stop the player moving
@@ -45,6 +48,7 @@ namespace Assets.Scripts
             DrawAlertArrows();
         }
 
+        [UsedImplicitly]
         private void OnTriggerEnter(Collider col)
         {
             print("Triggered!");
@@ -74,27 +78,25 @@ namespace Assets.Scripts
             OnPlayerEnterGuardTrigger(col);
         }
 
-        void Disable()
+        private void Disable()
 		{
 			// Disables player when the OnGuardCaughtPlayer action is called from guard script
 			_isDisabled = true;
 		}
 
+        [UsedImplicitly]
         private void OnDestroy()
         {
             // Remove disabled
             GuardUtil.OnGuardCaughtPlayer -= Disable;
-
-            //GuardTrained.OnGuardCaughtPlayer -= Disable;
         }
 
 		private void DrawAlertArrows()
 		{
-			foreach (GuardAlert guardAlert in guardsAlerts)
+			foreach (var guardAlert in guardsAlerts)
 			{
-                //GET GUARD UTIL FROM GUARD AND GET STATE FROM THAT
-                var guardUtil = guardAlert.guard.GetComponent<GuardUtil>();
-                var state = guardUtil.state;
+                // Get GuardUtil from Guard and get state from that
+                var state = guardAlert.guard.GetComponent<GuardUtil>().state;
                 var guardCanSeePlayer = guardAlert.guard.GetComponent<FieldOfView>().VisibleTargets.Count > 0;
 
                 if (state == GuardUtil.State.Patrol && guardCanSeePlayer || state == GuardUtil.State.Investigate)

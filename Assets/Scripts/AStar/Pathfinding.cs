@@ -21,8 +21,8 @@ namespace Assets.Scripts.AStar
             var waypoints = new Vector3[0];
             var pathSuccess = false;
 
-            var startNode = _grid.GetNodeFromWorldPoint(request.pathStart);
-            var targetNode = _grid.GetNodeFromWorldPoint(request.pathEnd);
+            var startNode = _grid.GetNodeFromWorldPoint(request.PathStart);
+            var targetNode = _grid.GetNodeFromWorldPoint(request.PathEnd);
 
             if (startNode == targetNode) pathSuccess = true;
             else if (startNode.Walkable && targetNode.Walkable)
@@ -68,7 +68,7 @@ namespace Assets.Scripts.AStar
                 pathSuccess = waypoints.Length > 0;
             }
             
-            callback(new PathResult(waypoints, pathSuccess, request.callback));
+            callback(new PathResult(waypoints, pathSuccess, request.Callback));
         }
 
         /// <summary>

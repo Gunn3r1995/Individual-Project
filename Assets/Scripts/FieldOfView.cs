@@ -19,9 +19,9 @@ namespace Assets.Scripts
         public float LookDelay = 0.2f;
 
         [HideInInspector]
-        public List<Transform> VisibleTargets = new List<Transform>();
+        public List<GameObject> VisibleTargets = new List<GameObject>();
         [HideInInspector]
-        public List<Transform> VisibleGuards = new List<Transform>();
+        public List<GameObject> VisibleGuards = new List<GameObject>();
 
         [UsedImplicitly]
         private void Start()
@@ -50,12 +50,13 @@ namespace Assets.Scripts
         private void FindVisibleTargets()
         {
             VisibleTargets.Clear();
+            VisibleGuards.Clear();
 
             // Find targets within sphere radius
             VisibleTargets.AddRange(LocateTargetsWithinSphere(Physics.OverlapSphere(transform.position, ViewRadius, PlayerMask)));
 
             // Locate Guards within sphere radius
-            VisibleTargets.AddRange(LocateTargetsWithinSphere(Physics.OverlapSphere(transform.position, ViewRadius, GuardMask)));
+            VisibleGuards.AddRange(LocateTargetsWithinSphere(Physics.OverlapSphere(transform.position, ViewRadius, GuardMask)));
         }
 
         /// <summary>
@@ -63,7 +64,7 @@ namespace Assets.Scripts
         /// </summary>
         /// <returns>The targets within sphere.</returns>
         /// <param name="targetsWithinSphere">Visbible targets within sphere.</param>
-        private IEnumerable<Transform> LocateTargetsWithinSphere(Collider[] targetsWithinSphere)
+        private IEnumerable<GameObject> LocateTargetsWithinSphere(Collider[] targetsWithinSphere)
         {
             // Confirm that targets within sphere are not blocked by obstacles and within field of view angle
             var pos = transform.position;
@@ -75,7 +76,7 @@ namespace Assets.Scripts
                 let distanceToTarget = Vector3.Distance(transform.position, targetCollider.transform.position)
                 where angleToTarget < ViewAngle / 2
                 where !Physics.Raycast(transform.position + Vector3.up * 2, directionToTarget, distanceToTarget, ObstacleMask)
-                select targetCollider.transform).ToList();
+                select targetCollider.gameObject).ToList();
         }
 
         /// <summary>

@@ -61,11 +61,17 @@ namespace Assets.Scripts
             return fov.VisibleTargets.Count > 0;
         }
 
-		/// <summary>
-		/// return true if can hear the player.
-		/// </summary>
-		/// <returns><c>true</c>, if hear player was caned, <c>false</c> otherwise.</returns>
-		/// <param name="hearing">Hearing.</param>
+        public static bool CanSeeGuard(FieldOfView fov)
+        {
+            return fov.VisibleGuards.Count > 0;
+        }
+
+
+        /// <summary>
+        /// return true if can hear the player.
+        /// </summary>
+        /// <returns><c>true</c>, if hear player was caned, <c>false</c> otherwise.</returns>
+        /// <param name="hearing">Hearing.</param>
         public static bool CanHearPlayer(Hearing hearing)
         {
             return hearing.HeardTargets.Count > 0;
@@ -209,6 +215,27 @@ namespace Assets.Scripts
             }
 
             Gizmos.DrawLine(previousPosition, startPosition);
+        }
+
+        public static void DrawTriggerGizmos(Collider[] triggers)
+        {
+            if (triggers.Length <= 0) return;
+            foreach (var trigger in triggers)
+            {
+                // Get Collider
+                var triggerCollider = trigger.GetComponent<Collider>();
+                if (triggerCollider is BoxCollider)
+                {
+                    // Draw Box Collider
+                    Gizmos.DrawWireCube(triggerCollider.bounds.center, triggerCollider.bounds.size);
+                }
+                else if (triggerCollider is SphereCollider)
+                {
+                    // Draw Sphere Collider
+                    var col = (SphereCollider)triggerCollider;
+                    Gizmos.DrawWireSphere(col.center, col.radius);
+                }
+            }
         }
     }
 }

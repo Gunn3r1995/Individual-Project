@@ -22,18 +22,16 @@ namespace Assets.Scripts.AStar
         }
 
         [UsedImplicitly]
-        void Update()
+        private void Update()
         {
-            if (results.Count > 0)
+            lock (results)
             {
-                int itemsInQueue = results.Count;
-                lock (results)
+                if (results != null && results.Count <= 0) return;
+                var itemsInQueue = results.Count;
+                for (var i = 0; i < itemsInQueue; i++)
                 {
-                    for (int i = 0; i < itemsInQueue; i++)
-                    {
-                        PathResult result = results.Dequeue();
-                        result.callback(result.path, result.success);
-                    }
+                    var result = results.Dequeue();
+                    result.Callback(result.Path, result.Success);
                 }
             }
         }
@@ -76,29 +74,29 @@ namespace Assets.Scripts.AStar
 
 public struct PathResult
 {
-    public Vector3[] path;
-    public bool success;
-    public Action<Vector3[], bool> callback;
+    public Vector3[] Path;
+    public bool Success;
+    public Action<Vector3[], bool> Callback;
 
     public PathResult(Vector3[] path, bool success, Action<Vector3[], bool> callback)
     {
-        this.path = path;
-        this.success = success;
-        this.callback = callback;
+        Path = path;
+        Success = success;
+        Callback = callback;
     }
 
 }
 
 public struct PathRequest
 {
-    public Vector3 pathStart;
-    public Vector3 pathEnd;
-    public Action<Vector3[], bool> callback;
+    public Vector3 PathStart;
+    public Vector3 PathEnd;
+    public Action<Vector3[], bool> Callback;
 
-    public PathRequest(Vector3 _start, Vector3 _end, Action<Vector3[], bool> _callback)
+    public PathRequest(Vector3 start, Vector3 end, Action<Vector3[], bool> callback)
     {
-        pathStart = _start;
-        pathEnd = _end;
-        callback = _callback;
+        PathStart = start;
+        PathEnd = end;
+        Callback = callback;
     }
 }
