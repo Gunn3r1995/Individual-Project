@@ -29,6 +29,8 @@ namespace Assets.Scripts
         /// <param name="timeToSpotPlayer"></param>
         public void SpotPlayer(FieldOfView fov, ref float playerVisibleTimer, float timeToSpotPlayer)
         {
+            if(fov == null) return;
+
             if (fov.VisibleTargets.Count > 0) playerVisibleTimer += Time.deltaTime;
             else playerVisibleTimer -= Time.deltaTime;
 
@@ -44,6 +46,8 @@ namespace Assets.Scripts
         /// <param name="playerHearedTimer">Player heared timer.</param>
         /// <param name="timeToHearPlayer">Time to hear player.</param>
         public void ListenForPlayer(Hearing hearing, ref float playerHearedTimer, float timeToHearPlayer) {
+            if(hearing == null) return;
+
             if (hearing.HeardTargets.Count > 0) playerHearedTimer += Time.deltaTime;
             else playerHearedTimer -= Time.deltaTime;
 

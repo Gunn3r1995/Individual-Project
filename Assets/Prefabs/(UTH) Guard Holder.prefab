@@ -2957,7 +2957,7 @@ MonoBehaviour:
   InvestigateTime: 10
   InvestigateSpotTime: 3
   WanderRadius: 5
-  ChaseSpeed: 1
+  ChaseSpeed: 1.25
   ChaseTime: 10
 --- !u!114 &114588955296880516
 MonoBehaviour:

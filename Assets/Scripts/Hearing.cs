@@ -18,7 +18,7 @@ public class Hearing : MonoBehaviour {
 	public List<Transform> HeardTargets = new List<Transform>();
 
 	// Use this for initialization
-	void Awake () {
+    private void Awake () {
         _player = GameObject.FindGameObjectWithTag("Player");
         _playerAnimator = _player.GetComponent<Animator>();
 		_gridAgent = GetComponent<GridAgent>();

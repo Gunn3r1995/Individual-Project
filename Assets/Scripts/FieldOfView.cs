@@ -53,10 +53,10 @@ namespace Assets.Scripts
             VisibleGuards.Clear();
 
             // Find targets within sphere radius
-            VisibleTargets.AddRange(LocateTargetsWithinSphere(Physics.OverlapSphere(transform.position, ViewRadius, PlayerMask)));
+            VisibleTargets.AddRange(LocateTargetsWithinSphere(Physics.OverlapSphere(transform.position, ViewRadius, PlayerMask), PlayerMask));
 
             // Locate Guards within sphere radius
-            VisibleGuards.AddRange(LocateTargetsWithinSphere(Physics.OverlapSphere(transform.position, ViewRadius, GuardMask)));
+            VisibleGuards.AddRange(LocateTargetsWithinSphere(Physics.OverlapSphere(transform.position, ViewRadius, GuardMask), GuardMask));
         }
 
         /// <summary>
@@ -64,18 +64,19 @@ namespace Assets.Scripts
         /// </summary>
         /// <returns>The targets within sphere.</returns>
         /// <param name="targetsWithinSphere">Visbible targets within sphere.</param>
-        private IEnumerable<GameObject> LocateTargetsWithinSphere(Collider[] targetsWithinSphere)
+        /// <param name="targetMask"></param>
+        private IEnumerable<GameObject> LocateTargetsWithinSphere(Collider[] targetsWithinSphere, LayerMask targetMask)
         {
             // Confirm that targets within sphere are not blocked by obstacles and within field of view angle
-            var pos = transform.position;
             return (
                 from targetCollider 
                 in targetsWithinSphere
-                let directionToTarget = (targetCollider.transform.position - transform.position).normalized
+                let height = targetCollider.bounds.size.y
+                let directionToTarget = (targetCollider.transform.position + Vector3.up * height - transform.position).normalized
                 let angleToTarget = Vector3.Angle(transform.forward, directionToTarget)
-                let distanceToTarget = Vector3.Distance(transform.position, targetCollider.transform.position)
+                let distanceToTarget = Vector3.Distance(transform.position, targetCollider.transform.position + Vector3.up * height)
                 where angleToTarget < ViewAngle / 2
-                where !Physics.Raycast(transform.position + Vector3.up * 2, directionToTarget, distanceToTarget, ObstacleMask)
+                where !Physics.Raycast(transform.position, directionToTarget, distanceToTarget, ObstacleMask) && Physics.Raycast(transform.position, directionToTarget, distanceToTarget, targetMask)
                 select targetCollider.gameObject).ToList();
         }
 
@@ -92,23 +93,5 @@ namespace Assets.Scripts
             
             return new Vector3(Mathf.Sin(angleInDegrees * Mathf.Deg2Rad), 0, Mathf.Cos(angleInDegrees * Mathf.Deg2Rad));
         }
-
-
-        //private void OnDrawGizmos()
-        //{
-        //    Handles.color = Color.blue;
-        //    Handles.DrawWireArc(transform.position, Vector3.up, Vector3.forward, 360, ViewRadius);
-        //    var viewAngleA = DirFromAngle(-ViewAngle / 2, false);
-        //    var viewAngleB = DirFromAngle(ViewAngle / 2, false);
-
-        //    Handles.DrawLine(transform.position, transform.position + viewAngleA * ViewRadius);
-        //    Handles.DrawLine(transform.position, transform.position + viewAngleB * ViewRadius);
-
-        //    Handles.color = Color.red;
-        //    foreach (var visibleTarget in VisibleTargets)
-        //    {
-        //        Handles.DrawLine(transform.position, visibleTarget.transform.position);
-        //    }
-        //}
     }
 }
