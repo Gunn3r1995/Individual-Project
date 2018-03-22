@@ -93,11 +93,7 @@ namespace Assets.Scripts
 			var direction = (targetPosition - currentPosition).normalized;
 			var distance = Vector3.Distance(currentPosition, targetPosition);
 
-			if (Physics.Raycast(currentPosition, direction, distance, obstacles))
-			{
-				return true;
-			}
-			return false;
+			return Physics.Raycast(currentPosition, direction, distance, obstacles);
 		}
 
         /// <summary>

@@ -37,7 +37,7 @@ namespace Assets.Scripts.Utility
                 FindObjectOfType<LevelManager>().ReloadCurrentScene();
 
             // Pause menu to restart or go back to main menu
-            if (Input.GetKeyDown(KeyCode.Escape) && !_gameIsOver)
+            if ((Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P)) && !_gameIsOver)
                 HandlePauseMenu();
 
             HandleStateUi();

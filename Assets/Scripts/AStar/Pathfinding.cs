@@ -15,7 +15,12 @@ namespace Assets.Scripts.AStar
         {
             _grid = GetComponent<Grid>();
         }
-
+        
+        /// <summary>
+        /// FindPath: Uses the A* Algorithm to find the best path from point A to point B
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="callback"></param>
         public void FindPath(PathRequest request, Action<PathResult> callback)
         {
             var waypoints = new Vector3[0];
@@ -106,6 +111,12 @@ namespace Assets.Scripts.AStar
             return path.Select(node => node.WorldPosition).ToArray();
         }
 
+        /// <summary>
+        /// GetDistance: Get the shortest distance between two nodes, used in distance cost calculations within the A* algorithm
+        /// </summary>
+        /// <param name="nodeA"></param>
+        /// <param name="nodeB"></param>
+        /// <returns></returns>
         private static int GetDistance(Node nodeA, Node nodeB)
         {
             var distanceX = Mathf.Abs(nodeA.GridX - nodeB.GridX);

@@ -59,7 +59,6 @@ namespace Assets.Scripts
 	    private float _redezvousTimer = 5.0f;
         [HideInInspector]
 	    public bool RequestRendezvous = false;
-	    private bool _rendezvous;
 	    #endregion
 
         #region Alert
@@ -92,7 +91,6 @@ namespace Assets.Scripts
 	    public Vector3 LastPos;
         private Vector3 _lastPosTracked;
 
-	    private Color color;
         #endregion
 
 
@@ -106,7 +104,6 @@ namespace Assets.Scripts
 	        _grid = FindObjectOfType<AStar.Grid>();
 	        _gridAgent = GetComponent<GridAgent>();
 	        _audioSource = GetComponent<AudioSource>();
-            color = Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
         }
 
 	    [UsedImplicitly]

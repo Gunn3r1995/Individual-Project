@@ -48,7 +48,7 @@ namespace UnityStandardAssets.Characters.ThirdPerson
             // read inputs
             float h = CrossPlatformInputManager.GetAxis("Horizontal");
             float v = CrossPlatformInputManager.GetAxis("Vertical");
-            bool crouch = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C);
+            bool crouch = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C) || Input.GetKey(KeyCode.RightControl);
 
             // calculate move direction to pass to character
             if (m_Cam != null)
@@ -65,7 +65,7 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 #if !MOBILE_INPUT
 			// walk speed multiplier
             if (!Input.GetKey(KeyCode.LeftShift)) m_Move *= 0.5f;
-            if(crouch) m_Move *= 1.0f;
+            if (crouch) m_Move *= 1.0f;
 #endif
 
             // pass all parameters to the character control script
