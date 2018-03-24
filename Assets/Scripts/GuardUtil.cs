@@ -8,7 +8,7 @@ namespace Assets.Scripts
     public class GuardUtil : MonoBehaviour {
         public static event Action OnGuardCaughtPlayer;
 
-        public enum State { Patrol, Alert, Investigate, Chase }
+        public enum State { Patrol, Alert, Investigate, Chase, Standing }
         public State state;
 
         /// <summary>
@@ -69,7 +69,6 @@ namespace Assets.Scripts
         {
             return fov.VisibleGuards.Count > 0;
         }
-
 
         /// <summary>
         /// return true if can hear the player.

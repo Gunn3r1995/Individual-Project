@@ -12,6 +12,7 @@ namespace Assets.Scripts.AStar
         private int _targetIndex;
         private ThirdPersonCharacter _character;
         private Coroutine _lastRoutine;
+        private Rigidbody _rigidbody;
 
         // Properties
         public bool HasPathFinished { get; private set; }
@@ -21,6 +22,7 @@ namespace Assets.Scripts.AStar
         private void Awake()
         {
             _character = GetComponent<ThirdPersonCharacter>();
+            _rigidbody = GetComponent<Rigidbody>();
         }
 
         /// <summary>
@@ -83,6 +85,11 @@ namespace Assets.Scripts.AStar
             if (_lastRoutine != null)
                 StopAllCoroutines();
 		}
+
+        public void Disable()
+        {
+            _rigidbody.isKinematic = true;
+        }
 
         /// <summary>
         /// Follows the current path

@@ -22,7 +22,7 @@ GameObject:
   - component: {fileID: 33000013055584672}
   - component: {fileID: 23000012075041696}
   - component: {fileID: 64000013931672536}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: ATM_Pink
   m_TagString: Untagged
   m_Icon: {fileID: 0}

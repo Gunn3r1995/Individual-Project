@@ -22,7 +22,7 @@ GameObject:
   - component: {fileID: 33000013585309048}
   - component: {fileID: 23000012609133416}
   - component: {fileID: 64000014031763246}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: ATM_Blue
   m_TagString: Untagged
   m_Icon: {fileID: 0}

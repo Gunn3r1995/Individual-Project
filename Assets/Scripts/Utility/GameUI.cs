@@ -109,6 +109,9 @@ namespace Assets.Scripts.Utility
                 case (int)GuardUtil.State.Chase:
                     if (StateChase != null) StateChase.SetActive(true);
                     break;
+                case (int)GuardUtil.State.Standing:
+                    DisableAllStateUi();
+                    break;
                 default:
                     DisableAllStateUi();
                     break;

@@ -63,8 +63,6 @@ namespace Assets.Scripts
 
         #region Alert
         public float AlertReactionTime = 2.0f;
-
-		private Vector3 _alertSpot;
 		private bool _alerted;
 		#endregion
 
@@ -83,8 +81,13 @@ namespace Assets.Scripts
 		private bool _chasing;
         #endregion
 
-	    #region Voice
-	    public VoicesDatabase VoicesDatabase;
+	    #region Chase
+	    private bool _standing;
+
+	    #endregion
+
+        #region Voice
+        public VoicesDatabase VoicesDatabase;
 	    #endregion
 
         [HideInInspector]
@@ -116,7 +119,6 @@ namespace Assets.Scripts
 	            _waypointIndex = Random.Range(0, Waypoints.Length);
 
 	        GuardUtil.state = GuardUtil.State.Patrol;
-	        //_audioSource.clip = TestAudioClip;
 
 	        if (Triggers.Length > 0)
 	        {
@@ -169,6 +171,10 @@ namespace Assets.Scripts
                     if (!_chasing)
 						StartCoroutine(Chase());
 					break;
+                case GuardUtil.State.Standing:
+                    if (!_standing)
+                        StartCoroutine(Stand());
+                    break;
                 default:
                     GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
                     GuardUtil.ListenForPlayer(_hearing, ref _playerHearedTimer, TimeToHearPlayer);
@@ -274,17 +280,18 @@ namespace Assets.Scripts
 		{
 			print("Alert");
 			_alerted = true;
+		    var alertSpot = new Vector3();
 
             // Set alert spot to players location
-            if (GuardUtil.CanSeePlayer(_fov)) _alertSpot = Player.transform.position;
-            else if (GuardUtil.CanHearPlayer(_hearing)) _alertSpot = Player.transform.position;
+            if (GuardUtil.CanSeePlayer(_fov)) alertSpot = Player.transform.position;
+            else if (GuardUtil.CanHearPlayer(_hearing)) alertSpot = Player.transform.position;
 
             // Play state sound
 		    AttemptPlayRandomStateSound(false);
 
 		    // Set the destination to the alert spot
-			transform.LookAt(_alertSpot);
-			_gridAgent.RequestSetDestination(transform.position, _alertSpot);
+			transform.LookAt(alertSpot);
+			_gridAgent.RequestSetDestination(transform.position, alertSpot);
 
 			// Stop moving and wait for 'AlertReactionTime' amount
 			_gridAgent.StopMoving();
@@ -310,6 +317,7 @@ namespace Assets.Scripts
 
 					// Wait for 'InvestigateSpotTime' amount while looking for the player
 					yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
+				    LastPos = alertSpot;
 				    GuardUtil.state = GuardUtil.State.Investigate;
 				}
 			    yield return null;
@@ -376,15 +384,26 @@ namespace Assets.Scripts
 		    var randomTime = Random.Range(5f, 15f);
 
             var investLastPos = LastPos;
+            print("Last Pos:" + LastPos);
+		    print("Invest Last Pos:" + investLastPos);
+
             // Generate first waypoint and save the position
             var direction = (transform.forward * 5 - transform.position).normalized;
             var distance = Vector3.Distance(transform.position, LastPos + transform.forward * 5);
 
             Vector3 targetPosition;
-            if (!Physics.Raycast(transform.position, direction, distance, _fov.ObstacleMask))
-                targetPosition = LastPos + transform.forward * 5;
-            else 
-                targetPosition = GuardUtil.CreateRandomWalkablePosition(_alertSpot, WanderRadius, ref investLastPos, _grid);
+		    if (!Physics.Raycast(transform.position, direction, distance, _fov.ObstacleMask))
+		    {
+		        targetPosition = LastPos + transform.forward * 5;
+                print("Forward target position:" + targetPosition);
+		    }
+		    else
+		    {
+		        targetPosition = GuardUtil.CreateRandomWalkablePosition(LastPos, WanderRadius, ref investLastPos, _grid);
+		        print("Target Position: " + targetPosition);
+            }
+
+		    print("Target Position: " + targetPosition);
 
 			// Go to first waypoint
 			_gridAgent.Speed = InvestigateSpeed;
@@ -437,7 +456,7 @@ namespace Assets.Scripts
 
                     // Guard reached waypoint
                     // Create a new waypoint parsing in the last waypoint; by reference so that it keeps the 'lastPos' updated
-                    targetPosition = GuardUtil.CreateRandomWalkablePosition(_alertSpot, WanderRadius, ref investLastPos);
+                    targetPosition = GuardUtil.CreateRandomWalkablePosition(LastPos, WanderRadius, ref investLastPos);
 
 					// Set the destination and stop moving work around
 					_gridAgent.RequestSetDestination(transform.position, targetPosition);
@@ -579,7 +598,6 @@ namespace Assets.Scripts
 
                             if (_gridAgent.HasPathFinished)
                             {
-                                _alertSpot = LastPos;
                                 _gridAgent.StopMoving();
                                 GuardUtil.state = GuardUtil.State.Investigate;
 
@@ -590,7 +608,6 @@ namespace Assets.Scripts
                             if (tempTimer >= InvestigateSpotTime)
                             {
                                 print("Chase time up");
-                                _alertSpot = LastPos;
                                 _gridAgent.StopMoving();
                                 GuardUtil.state = GuardUtil.State.Investigate;
 
@@ -623,7 +640,6 @@ namespace Assets.Scripts
 
                             if (_gridAgent.HasPathFinished)
                             {
-                                _alertSpot = LastPos;
                                 _gridAgent.StopMoving();
                                 GuardUtil.state = GuardUtil.State.Investigate;
 
@@ -641,7 +657,6 @@ namespace Assets.Scripts
                             if (tempTimer >= InvestigateSpotTime)
                             {
                                 print("Chase time up");
-                                _alertSpot = LastPos;
                                 _gridAgent.StopMoving();
                                 GuardUtil.state = GuardUtil.State.Investigate;
 
@@ -656,10 +671,14 @@ namespace Assets.Scripts
                 }
 
                 if (Vector3.Distance(transform.position, Player.transform.position) <= 1.0f)
-				{
-					_gridAgent.RequestSetDestination(transform.position, GuardUtil.CreateRandomWalkablePosition(transform.position, 5.0f, _grid));
-					_gridAgent.StopMoving();
+                {
+                    _gridAgent.RequestSetDestination(transform.position, Player.transform.position);
+                    _gridAgent.StopMoving();
+
+				    _gridAgent.Disable();
+				    GuardUtil.state = GuardUtil.State.Standing;
 					GuardUtil.GuardOnCaughtPlayer();
+				    yield break;
 				}
 
 			    if (speakTimer >= RandomTime)
@@ -674,7 +693,6 @@ namespace Assets.Scripts
 				if (timer >= ChaseTime)
 				{
                     print("Chase time up");
-				    _alertSpot = LastPos;
                     _gridAgent.StopMoving();
 
                     GuardUtil.state = GuardUtil.State.Investigate;
@@ -687,6 +705,19 @@ namespace Assets.Scripts
             print("Finsihed Chasing");
 			_chasing = false;
 		}
+
+	    private IEnumerator Stand()
+	    {
+	        _standing = true;
+
+	        while (GuardUtil.state == GuardUtil.State.Standing)
+	        {
+	            _gridAgent.StopMoving();
+                yield return null;
+	        }
+
+	        _standing = false;
+	    }
 
 	    /// <summary>
 	    /// LookForPlayer:
@@ -735,8 +766,7 @@ namespace Assets.Scripts
 	        {
 	            GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
 
-                // Talk To Guard
-
+                // Todo Talk To Guard
 
 	            timer += Time.deltaTime;
 	            yield return null;

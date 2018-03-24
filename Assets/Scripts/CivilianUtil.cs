@@ -194,6 +194,7 @@ namespace Assets.Scripts
             if (waypoints == null) return;
             if (waypoints.Length < 1) return;
 
+            Gizmos.color = Color.cyan;
             var startPosition = waypoints[0].transform.position;
             var previousPosition = startPosition;
 
@@ -225,6 +226,18 @@ namespace Assets.Scripts
                     var col = (SphereCollider)triggerCollider;
                     Gizmos.DrawWireSphere(col.center, col.radius);
                 }
+            }
+        }
+
+        public static void DrawWaypointSphereGizmos(GameObject[] waypoints)
+        {
+            if (waypoints == null) return;
+            if (waypoints.Length < 1) return;
+
+            Gizmos.color = Color.cyan;
+            foreach (var waypoint in waypoints)
+            {
+                Gizmos.DrawSphere(waypoint.transform.position, 0.3f);
             }
         }
     }
