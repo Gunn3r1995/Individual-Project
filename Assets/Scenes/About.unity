@@ -563,9 +563,9 @@ MonoBehaviour:
     mimic humans in a game scenario. The second adds greater AI and 'tricks' to provide
     the user with smarter AI to hopefully perceive a more 'realistic' human-like behaviour
     to give the player more realism and emersion in games. \r\n\r\nOnce finished playing,
-    please fill in the questionnaire found: URL.\r\nThis feedback would be significantly
-    appreciated to gather your opinion on between the different scenarios and the
-    scenarios as a whole.\r\n\r\nURL"
+    please fill in the questionnaire found: https://www.surveygizmo.com/s3/4278019/Adding-the-human-touch-to-AI-Individual-Project.\n\nThis
+    feedback would be significantly appreciated to gather your opinion on between
+    the different scenarios and the scenarios as a whole.\r\n\r\n\nhttps://www.surveygizmo.com/s3/4278019/Adding-the-human-touch-to-AI-Individual-Project"
 --- !u!222 &1669663121
 CanvasRenderer:
   m_ObjectHideFlags: 0

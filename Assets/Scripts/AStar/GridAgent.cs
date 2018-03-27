@@ -1,5 +1,7 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using JetBrains.Annotations;
 using UnityEngine;
 using UnityStandardAssets.Characters.ThirdPerson;
@@ -13,6 +15,8 @@ namespace Assets.Scripts.AStar
         private ThirdPersonCharacter _character;
         private Coroutine _lastRoutine;
         private Rigidbody _rigidbody;
+        private bool _smart;
+        private Grid _grid;
 
         // Properties
         public bool HasPathFinished { get; private set; }
@@ -23,6 +27,7 @@ namespace Assets.Scripts.AStar
         {
             _character = GetComponent<ThirdPersonCharacter>();
             _rigidbody = GetComponent<Rigidbody>();
+            _grid = FindObjectOfType<Grid>();
         }
 
         /// <summary>
@@ -30,7 +35,8 @@ namespace Assets.Scripts.AStar
         /// </summary>
         /// <param name="currentPosition"></param>
         /// <param name="targetPosition"></param>
-        public void RequestSetDestination(Vector3 currentPosition, Vector3 targetPosition)
+        /// <param name="smart"></param>
+        public void RequestSetDestination(Vector3 currentPosition, Vector3 targetPosition, bool smart)
         {
             // Has not finished path
             HasPathFinished = false;
@@ -38,7 +44,8 @@ namespace Assets.Scripts.AStar
             // Stops all coroutines
             if (_lastRoutine != null)
                 StopAllCoroutines();
-            
+
+            _smart = smart;
             // Requests A* Pathfinding algorithm then callbacks OnPathFound once finished
             PathRequestManager.RequestPath(new PathRequest(currentPosition, targetPosition, OnPathFound));
         }
@@ -66,7 +73,6 @@ namespace Assets.Scripts.AStar
                 return;
             }
 
-            print("Path starting waypoint" + newPath[0]);
             // If successful Dispose of old path and stop any coroutines
             _path = newPath;
             if (_lastRoutine != null)
@@ -102,12 +108,15 @@ namespace Assets.Scripts.AStar
             if (!PathFound()) yield return null;
 
             // Set initial waypoint to first index of path
+            _targetIndex = 0;
             var currentWaypoint = path[0];
+            var seenGuard = false;
+            var timer = 0f;
 
             while (!HasPathFinished)
             {
                 // Check if reached current waypoint destination
-                if (Vector3.Distance(transform.position, currentWaypoint) <= 0.2f)
+                if (Vector3.Distance(this.transform.position, currentWaypoint) <= 0.1f)
                 {
                     _targetIndex++;
                     // If reached last waypoint
@@ -119,6 +128,54 @@ namespace Assets.Scripts.AStar
                     }
                     // Go to next waypoint
                     currentWaypoint = path[_targetIndex];
+                }
+
+                // Walk around other targets if smart
+                if (_smart)
+                {
+                    if(seenGuard)
+                        timer += Time.deltaTime;
+
+                    RaycastHit hit;
+                    if (Physics.Linecast(transform.position, transform.position + transform.forward * 4.5f, out hit)) { 
+                        if((hit.transform.gameObject.tag == "Guard" || hit.transform.gameObject.tag == "Civilian") && !hit.collider.isTrigger)
+                        {
+                            if(!seenGuard) {
+                                seenGuard = true;
+                                for (var i = 0; i < 5; i++)
+                                {
+                                    var tempIndex = _targetIndex + i;
+                                    if (tempIndex >= path.Length) continue;
+
+                                    if (!_grid.GetNodeFromWorldPoint(path[tempIndex] + transform.right * 1f).Walkable)
+                                    { 
+                                        break;
+                                    }
+
+                                    switch (i)
+                                    {
+                                        case 0:
+                                            path[tempIndex] += transform.right * 0.5f;
+                                            break;
+                                        case 1:
+                                        case 2:
+                                        case 3:
+                                            path[tempIndex] += transform.right * 0.75f;
+                                            break;
+                                        case 4:
+                                            path[tempIndex] += transform.right * 0.5f;
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (timer >= 5f)
+                    {
+                        seenGuard = false;
+                        timer = 0f;
+                    }
                 }
 
                 // Move transform and character towards waypoint

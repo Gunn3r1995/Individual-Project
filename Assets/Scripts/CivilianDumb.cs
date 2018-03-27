@@ -97,14 +97,14 @@ namespace Assets.Scripts
         {
             _patrolling = true;
 
-            // Goto first waypoint
-            _gridAgent.Speed = PatrolSpeed;
-            _gridAgent.RequestSetDestination(transform.position, Waypoints[_waypointIndex].transform.position);
-
             while (CivilianUtil.state == CivilianUtil.State.Patrol)
             {
+                // Walk straight to the next waypoint
+                transform.position = Vector3.MoveTowards(transform.position, Waypoints[_waypointIndex].transform.position, PatrolSpeed * Time.deltaTime);
+                _character.Move((Waypoints[_waypointIndex].transform.position - transform.position).normalized * PatrolSpeed, false, false);
+
                 // Ensure has reached current waypoints destination
-                if (_gridAgent.HasPathFinished)
+                if (Vector3.Distance(transform.position, Waypoints[_waypointIndex].transform.position) <= 0.1f)
                 {
                     // Calculate next waypoint
                     if (RandomWaypoints)
@@ -116,19 +116,15 @@ namespace Assets.Scripts
                             _waypointIndex = 0;
                     }
 
-                    // Setting the destination to next waypoint
-                    _gridAgent.RequestSetDestination(transform.position, Waypoints[_waypointIndex].transform.position);
+                    // Stop walking animation
+                    _animator.SetFloat("Forward", 0);
 
-                    // Stop the guard for PatrolWaitTime amount of time
-                    _gridAgent.StopMoving();
+                    // Stop the civilian for PatrolWaitTime amount of time
                     yield return StartCoroutine(LookForPlayer(PatrolWaitTime));
-
-                    // Continue patrolling at PatrolSpeed
-                    _gridAgent.Speed = PatrolSpeed;
                 }
-
                 yield return null;
             }
+
             _patrolling = false;
         }
 
@@ -143,7 +139,7 @@ namespace Assets.Scripts
 
             // Go to first waypoint
             _gridAgent.Speed = EvadeSpeed;
-            _gridAgent.RequestSetDestination(transform.position, targetPosition);
+            _gridAgent.RequestSetDestination(transform.position, targetPosition, false);
 
             while (CivilianUtil.state == CivilianUtil.State.Evade)
             {
@@ -159,7 +155,7 @@ namespace Assets.Scripts
 
                         // Go to first waypoint
                         _gridAgent.Speed = EvadeSpeed;
-                        _gridAgent.RequestSetDestination(transform.position, targetPosition);
+                        _gridAgent.RequestSetDestination(transform.position, targetPosition, false);
                     }
                     else
                     {
@@ -195,8 +191,13 @@ namespace Assets.Scripts
 
         public void OnDrawGizmos()
         {
-            if (Waypoints != null)
+            if (Waypoints == null) return;
+
+            if(RandomWaypoints)
                 CivilianUtil.DrawWaypointSphereGizmos(Waypoints);
+            else
+                CivilianUtil.DrawWaypointGizmos(Waypoints);
+            GuardUtil.DrawNextWaypointLineGizmos(transform.position, Waypoints, _waypointIndex);
         }
     }
 }

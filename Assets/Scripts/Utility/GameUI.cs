@@ -138,6 +138,7 @@ namespace Assets.Scripts.Utility
 
             _gameIsPaused = true;
             PauseMenu.SetActive(true);
+
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
@@ -152,6 +153,7 @@ namespace Assets.Scripts.Utility
             _gameIsPaused = false;
             PauseMenu.SetActive(false);
 
+            Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
     }

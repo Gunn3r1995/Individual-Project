@@ -61,7 +61,6 @@ namespace Assets.Scripts
 
         private void HandleFinishCollider(Collider col)
         {
-
             // If collider tag is finish then disable player and level Win UI
             if (col.tag != "Finish") return;
 

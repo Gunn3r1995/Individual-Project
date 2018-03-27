@@ -6,8 +6,6 @@ using Random = UnityEngine.Random;
 namespace Assets.Scripts
 {
     public class CivilianUtil : MonoBehaviour {
-        public static event Action OnGuardCaughtPlayer;
-
         public enum State { Patrol, Evade }
         public State state;
 
@@ -26,11 +24,7 @@ namespace Assets.Scripts
 
             playerVisibleTimer = Mathf.Clamp(playerVisibleTimer, 0, timeToSpotPlayer);
 
-            if (playerVisibleTimer >= timeToSpotPlayer)
-            {
-                playerVisibleTimer = 0f;
-                state = State.Evade;
-            }
+            if (playerVisibleTimer >= timeToSpotPlayer) state = CivilianUtil.State.Evade;
         }
 
         /// <summary>

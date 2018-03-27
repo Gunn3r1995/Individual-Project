@@ -10,6 +10,7 @@ TagManager:
   - Guard
   - concrete
   - GuardTrigger
+  - Civilian
   layers:
   - Default
   - TransparentFX
