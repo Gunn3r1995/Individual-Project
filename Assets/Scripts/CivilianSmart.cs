@@ -1,10 +1,10 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Linq;
 using Assets.Scripts.AStar;
 using JetBrains.Annotations;
 using UnityEngine;
-using UnityStandardAssets.Characters.ThirdPerson;
-using Grid = Assets.Scripts.AStar.Grid;
+using Random = UnityEngine.Random;
 
 namespace Assets.Scripts
 {
@@ -14,14 +14,13 @@ namespace Assets.Scripts
         [HideInInspector]
         public CivilianUtil CivilianUtil;
 
+        private AudioSource _audioSource;
+
         private FieldOfView _fov;
         public GameObject Player;
         public bool AutoTargetPlayer;
 
-        private ThirdPersonCharacter _character;
-        private Animator _animator;
-
-        private Grid _grid;
+        private AStar.Grid _grid;
         private GridAgent _gridAgent;
 
         #region Sight
@@ -46,6 +45,10 @@ namespace Assets.Scripts
         private bool _evading;
         #endregion
 
+        #region Voice
+        public VoicesDatabase VoicesDatabase;
+        #endregion
+
         #endregion
 
         [UsedImplicitly]
@@ -53,11 +56,10 @@ namespace Assets.Scripts
         {
             if (GetComponent<CivilianUtil>() == null) gameObject.AddComponent<CivilianUtil>();
             CivilianUtil = GetComponent<CivilianUtil>();
-            _character = GetComponent<ThirdPersonCharacter>();
-            _animator = GetComponent<Animator>();
             _fov = GetComponent<FieldOfView>();
-            _grid = FindObjectOfType<Grid>();
+            _grid = FindObjectOfType<AStar.Grid>();
             _gridAgent = GetComponent<GridAgent>();
+            _audioSource = GetComponent<AudioSource>();
         }
 
         [UsedImplicitly]
@@ -99,8 +101,6 @@ namespace Assets.Scripts
 
             // Goto first waypoint
             _gridAgent.Speed = PatrolSpeed;
-
-            print(_waypointIndex);
             _gridAgent.RequestSetDestination(transform.position, Waypoints[_waypointIndex].transform.position);
 
             while (CivilianUtil.state == CivilianUtil.State.Patrol)
@@ -138,6 +138,8 @@ namespace Assets.Scripts
         {
             _evading = true;
             var lastPos = Player.transform.position;
+            var randomTime = Random.Range(5f, 15f);
+            var speakTimer = 0f;
 
             // Generate first waypoint
             var targetPosition = CivilianUtil.CreateRandomWalkablePosition(transform.position, EvadeRadius, _grid);
@@ -146,8 +148,12 @@ namespace Assets.Scripts
             _gridAgent.Speed = EvadeSpeed;
             _gridAgent.RequestSetDestination(transform.position, targetPosition);
 
+            AttemptPlayRandomStateSound(false);
+
             while (CivilianUtil.state == CivilianUtil.State.Evade)
             {
+                speakTimer += Time.deltaTime;
+
                 // Run Away
                 if (_gridAgent.HasPathFinished)
                 {
@@ -167,11 +173,35 @@ namespace Assets.Scripts
                     }
                 }
 
+                if (speakTimer >= randomTime)
+                {
+                    // Speak
+                    AttemptPlayRandomStateSound(false);
+
+                    speakTimer = 0;
+                    randomTime = Random.Range(5f, 15f);
+                }
+
                 // Tell Any Guards
                 if (CivilianUtil.CanSeeGuard(_fov))
                 {
+                    var alreadySpoken = false;
                     foreach (var guard in _fov.VisibleGuards)
                     {
+                        if (guard.GetComponent<GuardUtil>().state == GuardUtil.State.Investigate) continue;
+
+                        // Ask For Help
+                        if (!alreadySpoken)
+                        {
+                            if (VoicesDatabase != null)
+                            {
+                                var helpClip = VoicesDatabase.GetRandomCivilianEvadeGuardSightedClip();
+                                if (helpClip != null && !_audioSource.isPlaying)
+                                    _audioSource.PlayOneShot(helpClip);
+                            }
+                            alreadySpoken = true;
+                        }
+
                         guard.GetComponent<GuardUtil>().state = GuardUtil.State.Investigate;
                         guard.GetComponent<GuardTrained>().LastPos = lastPos;
                         guard.GetComponent<GuardTrained>().Disabled = false;
@@ -184,10 +214,39 @@ namespace Assets.Scripts
             _evading = false;
         }
 
+        private void AttemptPlayRandomStateSound(bool guardSighted)
+        {
+            if (VoicesDatabase == null) return;
+            if (_audioSource == null) return;
+            if (_audioSource.isPlaying) return;
+
+            switch (CivilianUtil.state)
+            {
+                case CivilianUtil.State.Patrol:
+                    break;
+                case CivilianUtil.State.Evade:
+                    if (!guardSighted)
+                    {
+                        var evadeAudioClip = VoicesDatabase.GetRandomCivilianEvadeClip();
+                        if (evadeAudioClip != null && !_audioSource.isPlaying)
+                            _audioSource.PlayOneShot(evadeAudioClip);
+                    }
+                    else
+                    {
+                        var evadeGuardSightedClip = VoicesDatabase.GetRandomCivilianEvadeGuardSightedClip();
+                        if (evadeGuardSightedClip != null && !_audioSource.isPlaying)
+                            _audioSource.PlayOneShot(evadeGuardSightedClip);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
         /// <summary>
         /// LookForPlayer:
         /// LookForPlayer is a method which adds the functionality of new WaitForSeconds, but with improved SpotPlayer();
-        /// method call to ensure that the guard can see the player while the guard is waiting.
+        /// method call to ensure that the civilian can see the player while the civilian is waiting.
         /// </summary>
         /// <param name="waitTime"></param>
         /// <returns></returns>

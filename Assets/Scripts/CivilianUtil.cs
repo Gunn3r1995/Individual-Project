@@ -19,14 +19,18 @@ namespace Assets.Scripts
         /// <param name="timeToSpotPlayer"></param>
         public void SpotPlayer(FieldOfView fov, ref float playerVisibleTimer, float timeToSpotPlayer)
         {
-            if(fov == null) return;
+            if (fov == null) return;
 
             if (fov.VisibleTargets.Count > 0) playerVisibleTimer += Time.deltaTime;
             else playerVisibleTimer -= Time.deltaTime;
 
             playerVisibleTimer = Mathf.Clamp(playerVisibleTimer, 0, timeToSpotPlayer);
 
-            if (playerVisibleTimer >= timeToSpotPlayer) state = CivilianUtil.State.Evade;
+            if (playerVisibleTimer >= timeToSpotPlayer)
+            {
+                playerVisibleTimer = 0f;
+                state = State.Evade;
+            }
         }
 
         /// <summary>
@@ -59,7 +63,6 @@ namespace Assets.Scripts
         {
             return fov.VisibleGuards.Count > 0;
         }
-
 
         /// <summary>
         /// return true if can hear the player.

@@ -4,7 +4,6 @@ using Assets.Scripts.AStar;
 using JetBrains.Annotations;
 using UnityEngine;
 using UnityStandardAssets.Characters.ThirdPerson;
-using Grid = Assets.Scripts.AStar.Grid;
 
 namespace Assets.Scripts
 {
@@ -21,7 +20,7 @@ namespace Assets.Scripts
         private ThirdPersonCharacter _character;
         private Animator _animator;
 
-        private Grid _grid;
+        private AStar.Grid _grid;
         private GridAgent _gridAgent;
 
         #region Sight
@@ -57,7 +56,7 @@ namespace Assets.Scripts
             _character = GetComponent<ThirdPersonCharacter>();
             _animator = GetComponent<Animator>();
             _fov = GetComponent<FieldOfView>();
-            _grid = FindObjectOfType<Grid>();
+            _grid = FindObjectOfType<AStar.Grid>();
             _gridAgent = GetComponent<GridAgent>();
         }
 
@@ -98,14 +97,14 @@ namespace Assets.Scripts
         {
             _patrolling = true;
 
+            // Goto first waypoint
+            _gridAgent.Speed = PatrolSpeed;
+            _gridAgent.RequestSetDestination(transform.position, Waypoints[_waypointIndex].transform.position);
+
             while (CivilianUtil.state == CivilianUtil.State.Patrol)
             {
-                // Walk straight to the next waypoint
-                transform.position = Vector3.MoveTowards(transform.position, Waypoints[_waypointIndex].transform.position, PatrolSpeed * Time.deltaTime);
-                _character.Move((Waypoints[_waypointIndex].transform.position - transform.position).normalized * PatrolSpeed, false, false);
-
                 // Ensure has reached current waypoints destination
-                if (Vector3.Distance(transform.position, Waypoints[_waypointIndex].transform.position) <= 0.1f)
+                if (_gridAgent.HasPathFinished)
                 {
                     // Calculate next waypoint
                     if (RandomWaypoints)
@@ -117,25 +116,30 @@ namespace Assets.Scripts
                             _waypointIndex = 0;
                     }
 
-                    // Stop walking animation
-                    _animator.SetFloat("Forward", 0);
+                    // Setting the destination to next waypoint
+                    _gridAgent.RequestSetDestination(transform.position, Waypoints[_waypointIndex].transform.position);
 
-                    // Stop the civilian for PatrolWaitTime amount of time
+                    // Stop the guard for PatrolWaitTime amount of time
+                    _gridAgent.StopMoving();
                     yield return StartCoroutine(LookForPlayer(PatrolWaitTime));
+
+                    // Continue patrolling at PatrolSpeed
+                    _gridAgent.Speed = PatrolSpeed;
                 }
+
                 yield return null;
             }
-
             _patrolling = false;
         }
 
         private IEnumerator Evade()
         {
             _evading = true;
-            var lastPos = Player.transform.position;
+            var speakTimer = 0f;
 
+            var pos = transform.position;
             // Generate first waypoint
-            var targetPosition = CivilianUtil.CreateRandomWalkablePosition(transform.position, EvadeRadius, _grid);
+            var targetPosition = CivilianUtil.CreateRandomWalkablePosition(pos, EvadeRadius, _grid);
 
             // Go to first waypoint
             _gridAgent.Speed = EvadeSpeed;
@@ -143,6 +147,8 @@ namespace Assets.Scripts
 
             while (CivilianUtil.state == CivilianUtil.State.Evade)
             {
+                speakTimer += Time.deltaTime;
+
                 // Run Away
                 if (_gridAgent.HasPathFinished)
                 {
@@ -159,19 +165,6 @@ namespace Assets.Scripts
                     {
                         CivilianUtil.state = CivilianUtil.State.Patrol;
                         yield break;
-                    }
-                }
-
-                // Tell Any Guards
-                if (CivilianUtil.CanSeeGuard(_fov))
-                {
-                    print("GUARD SEEN");
-                    foreach (var guard in _fov.VisibleGuards)
-                    {
-                        print("LAST POSITION:" + lastPos);
-                        guard.GetComponent<GuardUtil>().state = GuardUtil.State.Investigate;
-                        guard.GetComponent<GuardTrained>().LastPos = lastPos;
-                        guard.GetComponent<GuardTrained>().Disabled = false;
                     }
                 }
 

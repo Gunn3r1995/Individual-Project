@@ -13,6 +13,8 @@ namespace Assets.Scripts
         public AudioClip[] ChaseClips;
         public AudioClip[] ChaseAskForHelpClips;
         public AudioClip[] ChaseFinishClips;
+        public AudioClip[] CivilianEvadeClips;
+        public AudioClip[] CivilianEvadeGuardSightedClips;
 
         public AudioClip GetRandomPatrolClip()
         {
@@ -84,6 +86,22 @@ namespace Assets.Scripts
             if (ChaseFinishClips.Length <= 0) return null;
 
             return ChaseFinishClips[Random.Range(0, ChaseFinishClips.Length)];
+        }
+
+        public AudioClip GetRandomCivilianEvadeClip()
+        {
+            if (CivilianEvadeClips == null) return null;
+            if (CivilianEvadeClips.Length <= 0) return null;
+
+            return CivilianEvadeClips[Random.Range(0, CivilianEvadeClips.Length)];
+        }
+
+        public AudioClip GetRandomCivilianEvadeGuardSightedClip()
+        {
+            if (CivilianEvadeGuardSightedClips == null) return null;
+            if (CivilianEvadeGuardSightedClips.Length <= 0) return null;
+
+            return CivilianEvadeGuardSightedClips[Random.Range(0, CivilianEvadeGuardSightedClips.Length)];
         }
     }
 }

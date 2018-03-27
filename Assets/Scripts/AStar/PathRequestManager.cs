@@ -8,8 +8,7 @@ namespace Assets.Scripts.AStar
 {
     public class PathRequestManager : MonoBehaviour
     {
-
-        Queue<PathResult> results = new Queue<PathResult>();
+        private Queue<PathResult> _results = new Queue<PathResult>();
 
         private static PathRequestManager _instance;
         private Pathfinding _pathfinding;
@@ -24,13 +23,13 @@ namespace Assets.Scripts.AStar
         [UsedImplicitly]
         private void Update()
         {
-            lock (results)
+            lock (_results)
             {
-                if (results != null && results.Count <= 0) return;
-                var itemsInQueue = results.Count;
+                if (_results != null && _results.Count <= 0) return;
+                var itemsInQueue = _results.Count;
                 for (var i = 0; i < itemsInQueue; i++)
                 {
-                    var result = results.Dequeue();
+                    var result = _results.Dequeue();
                     result.Callback(result.Path, result.Success);
                 }
             }
@@ -47,9 +46,9 @@ namespace Assets.Scripts.AStar
 
         public void FinishedProcessingPath(PathResult result)
         {
-            lock (results)
+            lock (_results)
             {
-                results.Enqueue(result);
+                _results.Enqueue(result);
             }
         }
 
@@ -64,9 +63,9 @@ namespace Assets.Scripts.AStar
 
 		public void FinishedProcessingCalculatePath(PathResult result)
 		{
-			lock (results)
+			lock (_results)
 			{
-				results.Enqueue(result);
+				_results.Enqueue(result);
 			}
 		}
     }

@@ -765,7 +765,7 @@ GameObject:
   - component: {fileID: 82758860233642012}
   - component: {fileID: 114908830998384174}
   m_Layer: 14
-  m_Name: CivilianDumb
+  m_Name: CivilianSmart
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2380,7 +2380,7 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1656948368670620}
-  m_LocalRotation: {x: 0.53267515, y: 0.07034045, z: 0.83613265, w: -0.11041513}
+  m_LocalRotation: {x: 0.5326752, y: 0.070340455, z: 0.83613276, w: -0.110415146}
   m_LocalPosition: {x: 0.000022271464, y: -0.00006150465, z: 0.026027026}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
@@ -2718,7 +2718,7 @@ MonoBehaviour:
   ObstacleMask:
     serializedVersion: 2
     m_Bits: 1536
-  LookDelay: 0.5
+  LookDelay: 0.2
   VisibleTargets: []
   VisibleGuards: []
 --- !u!114 &114908830998384174
@@ -2769,8 +2769,8 @@ MonoBehaviour:
   PatrolSpeed: 0.5
   PatrolWaitTime: 0.5
   EvadeSpeed: 1.5
-  EvadeWaitTime: 3
   EvadeRadius: 30
+  VoicesDatabase: {fileID: 0}
 --- !u!114 &114982610724874530
 MonoBehaviour:
   m_ObjectHideFlags: 1

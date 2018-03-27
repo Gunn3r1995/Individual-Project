@@ -11,15 +11,20 @@ namespace Assets.Scripts
         public event Action OnReachedEndOfLevel;
         public event Action<Collider> OnPlayerEnterGuardTrigger;
 
-        public GameObject alert;
+        public GameObject Alert;
         public float RotationSpeed;
 
-        private List<GuardAlert> guardsAlerts;
-
+        private List<GuardAlert> _guardsAlerts;
         private Rigidbody _rigidbody;
 
-        private bool _isDisabled = false;
+        private bool _isDisabled;
         #endregion
+
+        [UsedImplicitly]
+        private void Awake()
+        {
+            _rigidbody = GetComponent<Rigidbody>();
+        }
 
         [UsedImplicitly]
         private void Start()
@@ -28,15 +33,14 @@ namespace Assets.Scripts
             GuardUtil.OnGuardCaughtPlayer += Disable;
 
 			// Get all guard game objects and other assets
-			guardsAlerts = new List<GuardAlert>();
+			_guardsAlerts = new List<GuardAlert>();
             foreach (var guard in GameObject.FindGameObjectsWithTag("Guard"))
             {
-                guardsAlerts.Add(
+                _guardsAlerts.Add(
                     new GuardAlert(guard, 
-                                   Instantiate(alert, transform.position + -(Vector3.forward)/2, transform.rotation, transform.parent), 
-                                   alert.GetComponent<Renderer>().sharedMaterial.color));
+                                   Instantiate(Alert, transform.position + -(Vector3.forward)/2, transform.rotation, transform.parent), 
+                                   Alert.GetComponent<Renderer>().sharedMaterial.color));
             }
-            _rigidbody = GetComponent<Rigidbody>();
         }
 
         [UsedImplicitly]
@@ -51,8 +55,6 @@ namespace Assets.Scripts
         [UsedImplicitly]
         private void OnTriggerEnter(Collider col)
         {
-            print("Triggered!");
-
             HandleFinishCollider(col);
             HandleGuardTriggerColliders(col);
         }
@@ -84,38 +86,31 @@ namespace Assets.Scripts
 			_isDisabled = true;
 		}
 
-        [UsedImplicitly]
-        private void OnDestroy()
-        {
-            // Remove disabled
-            GuardUtil.OnGuardCaughtPlayer -= Disable;
-        }
-
 		private void DrawAlertArrows()
 		{
-			foreach (var guardAlert in guardsAlerts)
+			foreach (var guardAlert in _guardsAlerts)
 			{
                 // Get GuardUtil from Guard and get state from that
-                var state = guardAlert.guard.GetComponent<GuardUtil>().state;
-                var guardCanSeePlayer = guardAlert.guard.GetComponent<FieldOfView>().VisibleTargets.Count > 0;
+                var state = guardAlert.Guard.GetComponent<GuardUtil>().state;
+                var guardCanSeePlayer = guardAlert.Guard.GetComponent<FieldOfView>().VisibleTargets.Count > 0;
 
                 if (state == GuardUtil.State.Patrol && guardCanSeePlayer || state == GuardUtil.State.Investigate)
 				{
 					// Calculate Rotation and Direction
-					CalculateArrowDirection(guardAlert.guard, guardAlert.alert);
+					CalculateArrowDirection(guardAlert.Guard, guardAlert.Alert);
 
 					// Colour
-					guardAlert.alert.GetComponent<Renderer>().material.color = Color.black;
+					guardAlert.Alert.GetComponent<Renderer>().material.color = Color.black;
 				} else if (state == GuardUtil.State.Alert || state == GuardUtil.State.Chase)
 				{
 					// Calculate Rotation and Direction
-					CalculateArrowDirection(guardAlert.guard, guardAlert.alert);
+					CalculateArrowDirection(guardAlert.Guard, guardAlert.Alert);
 
 					// Colour
-					guardAlert.alert.GetComponent<Renderer>().material.color = Color.red;
+					guardAlert.Alert.GetComponent<Renderer>().material.color = Color.red;
 				} else
 				{
-					guardAlert.alert.SetActive(false);
+					guardAlert.Alert.SetActive(false);
 				}
 			}
 		}
@@ -136,14 +131,14 @@ namespace Assets.Scripts
 
 public struct GuardAlert
 {
-	public GameObject guard;
-	public GameObject alert;
-    public Color originalColor;
+	public GameObject Guard;
+	public GameObject Alert;
+    public Color OriginalColor;
 
     public GuardAlert(GameObject guard, GameObject alert, Color originalColor)
 	{
-		this.guard = guard;
-		this.alert = alert;
-        this.originalColor = originalColor;
+		Guard = guard;
+		Alert = alert;
+        OriginalColor = originalColor;
 	}
 }

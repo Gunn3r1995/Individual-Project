@@ -169,7 +169,7 @@ namespace Assets.Scripts
             yield return new WaitForSeconds(AlertReactionTime);
 
             while (GuardUtil.state == GuardUtil.State.Alert) {
-				print("Alerted");
+			    print("Alerted");
 				_gridAgent.Speed = InvestigateSpeed;
 
                 if (_gridAgent.HasPathFinished)
@@ -196,7 +196,6 @@ namespace Assets.Scripts
 
                 yield return null;
             }
-            print("Finished Alert");
 			_alerted = false;
         }
 
@@ -248,7 +247,7 @@ namespace Assets.Scripts
 
                 yield return null;
             }
-            print("Finished Investiagting");
+
             _investigating = false;
         }
 

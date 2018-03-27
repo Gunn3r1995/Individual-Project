@@ -66,6 +66,7 @@ namespace Assets.Scripts.AStar
                 return;
             }
 
+            print("Path starting waypoint" + newPath[0]);
             // If successful Dispose of old path and stop any coroutines
             _path = newPath;
             if (_lastRoutine != null)
