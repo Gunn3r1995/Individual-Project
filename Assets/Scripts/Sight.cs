@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 
 namespace Assets.Scripts
 {
-    public class FieldOfView : MonoBehaviour
+    public class Sight : MonoBehaviour
     {
 
         public float ViewRadius;

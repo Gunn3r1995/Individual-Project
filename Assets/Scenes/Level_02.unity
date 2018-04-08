@@ -6519,7 +6519,7 @@ Prefab:
     - target: {fileID: 114992213235518984, guid: 76dab29f1ae64694ab624c854b6925f8,
         type: 2}
       propertyPath: DisplayGridGizmos
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1051185060656670, guid: 76dab29f1ae64694ab624c854b6925f8, type: 2}
       propertyPath: m_IsActive
@@ -6538,6 +6538,16 @@ Prefab:
     - target: {fileID: 1051185060656670, guid: 76dab29f1ae64694ab624c854b6925f8, type: 2}
       propertyPath: m_StaticEditorFlags
       value: 4294967295
+      objectReference: {fileID: 0}
+    - target: {fileID: 114992213235518984, guid: 76dab29f1ae64694ab624c854b6925f8,
+        type: 2}
+      propertyPath: GridSize.x
+      value: 170
+      objectReference: {fileID: 0}
+    - target: {fileID: 114992213235518984, guid: 76dab29f1ae64694ab624c854b6925f8,
+        type: 2}
+      propertyPath: GridSize.y
+      value: 135
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 76dab29f1ae64694ab624c854b6925f8, type: 2}
@@ -12754,7 +12764,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &864194403
 Transform:
   m_ObjectHideFlags: 0
@@ -21762,7 +21772,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1585947067
 Transform:
   m_ObjectHideFlags: 0

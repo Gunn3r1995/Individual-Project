@@ -91,7 +91,7 @@ namespace Assets.Scripts
 			{
                 // Get GuardUtil from Guard and get state from that
                 var state = guardAlert.Guard.GetComponent<GuardUtil>().state;
-                var guardCanSeePlayer = guardAlert.Guard.GetComponent<FieldOfView>().VisibleTargets.Count > 0;
+                var guardCanSeePlayer = guardAlert.Guard.GetComponent<Sight>().VisibleTargets.Count > 0;
 
                 if (state == GuardUtil.State.Patrol && guardCanSeePlayer || state == GuardUtil.State.Investigate)
 				{

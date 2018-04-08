@@ -27,7 +27,7 @@ namespace Assets.Scripts
 	    public Collider[] Triggers;
 
 		#region Sight
-		private FieldOfView _fov;
+        private Sight _sight;
         public float TimeToSpotPlayer = 0.5f;
 		private float _playerVisibleTimer;
 	    private float _guardVisibleTimer;
@@ -98,7 +98,7 @@ namespace Assets.Scripts
 	    {
 	        if (GetComponent<GuardUtil>() == null) gameObject.AddComponent<GuardUtil>();
 	        GuardUtil = GetComponent<GuardUtil>();
-	        _fov = GetComponent<FieldOfView>();
+	        _sight = GetComponent<Sight>();
             _hearing = GetComponent<Hearing>();
 	        _grid = FindObjectOfType<AStar.Grid>();
 	        _gridAgent = GetComponent<GridAgent>();
@@ -137,8 +137,8 @@ namespace Assets.Scripts
 	    {
 	        if (Disabled)
 	        {
-	            GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
-	            Disabled &= (!GuardUtil.CanSeePlayer(_fov) && !GuardUtil.CanHearPlayer(_hearing));
+	            GuardUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
+	            Disabled &= (!GuardUtil.CanSeePlayer(_sight) && !GuardUtil.CanHearPlayer(_hearing));
 	        } else Fsm();
 		}
 
@@ -149,7 +149,7 @@ namespace Assets.Scripts
             switch (GuardUtil.state)
 			{
 				case GuardUtil.State.Patrol:
-					GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
+					GuardUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
                     GuardUtil.ListenForPlayer(_hearing, ref _playerHearedTimer, TimeToHearPlayer);
 
 				    if (!_patrolling)
@@ -172,7 +172,7 @@ namespace Assets.Scripts
                         StartCoroutine(Stand());
                     break;
                 default:
-                    GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
+                    GuardUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
                     GuardUtil.ListenForPlayer(_hearing, ref _playerHearedTimer, TimeToHearPlayer);
                     if (!_patrolling)
                         StartCoroutine(Patrol());
@@ -216,12 +216,12 @@ namespace Assets.Scripts
 				}
 
 			    _redezvousTimer += Time.deltaTime;
-			    if (GuardUtil.CanSeeGuard(_fov) && _redezvousTimer >= RedezvousWaitTime)
+			    if (GuardUtil.CanSeeGuard(_sight) && _redezvousTimer >= RedezvousWaitTime)
 			    {
-			        if (Vector3.Distance(transform.position, _fov.VisibleGuards[0].GetComponent<GuardTrained>().transform.position) <= 4.0f)
+			        if (Vector3.Distance(transform.position, _sight.VisibleGuards[0].GetComponent<GuardTrained>().transform.position) <= 4.0f)
 			        {
 			            _gridAgent.Speed = 0;
-                        transform.LookAt(_fov.VisibleGuards[0].GetComponent<GuardTrained>().transform);
+                        transform.LookAt(_sight.VisibleGuards[0].GetComponent<GuardTrained>().transform);
 
 			            yield return StartCoroutine(TalkToGuard(RedezvousWaitTime));
 			            _redezvousTimer = 0f;
@@ -241,7 +241,7 @@ namespace Assets.Scripts
 		    var alertSpot = new Vector3();
 
             // Set alert spot to players location
-            if (GuardUtil.CanSeePlayer(_fov)) alertSpot = Player.transform.position;
+            if (GuardUtil.CanSeePlayer(_sight)) alertSpot = Player.transform.position;
             else if (GuardUtil.CanHearPlayer(_hearing)) alertSpot = Player.transform.position;
 
             // Play state sound
@@ -260,7 +260,7 @@ namespace Assets.Scripts
             while (GuardUtil.state == GuardUtil.State.Alert)
 			{
 			    // If can se player while alerted go straight to chase
-                if (GuardUtil.CanSeePlayer(_fov) || GuardUtil.CanHearPlayer(_hearing))
+                if (GuardUtil.CanSeePlayer(_sight) || GuardUtil.CanHearPlayer(_hearing))
 			    {
 			        GuardUtil.state = GuardUtil.State.Chase;
 			    } else if (_gridAgent.HasPathFinished)
@@ -297,7 +297,7 @@ namespace Assets.Scripts
             var distance = Vector3.Distance(transform.position, LastPos + transform.forward * 5);
 
             Vector3 targetPosition;
-		    if (!Physics.Raycast(transform.position, direction, distance, _fov.ObstacleMask))
+		    if (!Physics.Raycast(transform.position, direction, distance, _sight.ObstacleMask))
 		    {
 		        targetPosition = LastPos + transform.forward * 5;
 		    }
@@ -316,10 +316,10 @@ namespace Assets.Scripts
 				timer += Time.deltaTime;
 			    speakTimer += Time.deltaTime;
 
-                if (GuardUtil.CanSeeGuard(_fov))
+                if (GuardUtil.CanSeeGuard(_sight))
 			    {
 			        var alreadySpoken = false;
-			        foreach (var visibleGuard in _fov.VisibleGuards)
+			        foreach (var visibleGuard in _sight.VisibleGuards)
 			        {
 			            if (visibleGuard.GetComponent<GuardUtil>().state == GuardUtil.State.Investigate) continue;
 
@@ -341,7 +341,7 @@ namespace Assets.Scripts
 			    }
 
                 // If can se player while investigating go straight to chase
-                if (GuardUtil.CanSeePlayer(_fov) || GuardUtil.CanHearPlayer(_hearing))
+                if (GuardUtil.CanSeePlayer(_sight) || GuardUtil.CanHearPlayer(_hearing))
 			    {
                     LastPos = Player.transform.position;
 			        GuardUtil.state = GuardUtil.State.Chase;
@@ -420,9 +420,9 @@ namespace Assets.Scripts
 
 			    _gridAgent.Speed = ChaseSpeed;
 
-                if (GuardUtil.CanSeeGuard(_fov))
+                if (GuardUtil.CanSeeGuard(_sight))
                 {
-                    foreach (var visibleGuard in _fov.VisibleGuards)
+                    foreach (var visibleGuard in _sight.VisibleGuards)
                     {
                         if (visibleGuard.GetComponent<GuardUtil>().state == GuardUtil.State.Chase) continue;
 
@@ -443,13 +443,13 @@ namespace Assets.Scripts
                     }
                 }
 
-                if (GuardUtil.CanSeePlayer(_fov) || GuardUtil.CanHearPlayer(_hearing))
+                if (GuardUtil.CanSeePlayer(_sight) || GuardUtil.CanHearPlayer(_hearing))
                 {
                     LastPos = Player.transform.position;
                     _lastPosTracked = Player.transform.position + Player.transform.forward * 5.0f;
                     goingToLastPosition = false;
 
-                    if (!GuardUtil.IsBlockedByObstacle(transform.position, Player.transform.position, _fov.ObstacleMask))
+                    if (!GuardUtil.IsBlockedByObstacle(transform.position, Player.transform.position, _sight.ObstacleMask))
                     {
                         _gridAgent.StopAllCoroutines();
                         _gridAgent.StraightToDestination(Player.transform.position);
@@ -469,7 +469,7 @@ namespace Assets.Scripts
                                 blockedByObstacle = false;
                                 break;
                             }
-                            if (!GuardUtil.IsBlockedByObstacle(transform.position, Player.transform.position, _fov.ObstacleMask))
+                            if (!GuardUtil.IsBlockedByObstacle(transform.position, Player.transform.position, _sight.ObstacleMask))
                             {
                                 _gridAgent.StopAllCoroutines();
                                 blockedByObstacle = false;
@@ -481,7 +481,7 @@ namespace Assets.Scripts
                 }
                 else
                 {
-                    if (!GuardUtil.IsBlockedByObstacle(transform.position, _lastPosTracked, _fov.ObstacleMask))
+                    if (!GuardUtil.IsBlockedByObstacle(transform.position, _lastPosTracked, _sight.ObstacleMask))
                     {
                         if (!goingToLastPosition)
 						{
@@ -513,7 +513,7 @@ namespace Assets.Scripts
                                 break;
                             }
 
-                            if (GuardUtil.CanSeePlayer(_fov) || GuardUtil.CanHearPlayer(_hearing)) {
+                            if (GuardUtil.CanSeePlayer(_sight) || GuardUtil.CanHearPlayer(_hearing)) {
 								_gridAgent.StopAllCoroutines();
                                 goingToLastPosition = false;
                                 break;
@@ -543,7 +543,7 @@ namespace Assets.Scripts
                                 break;
                             }
 
-                            if (GuardUtil.CanSeePlayer(_fov) || GuardUtil.CanHearPlayer(_hearing))
+                            if (GuardUtil.CanSeePlayer(_sight) || GuardUtil.CanHearPlayer(_hearing))
 							{
 								_gridAgent.StopAllCoroutines();
 								goingToLastPosition = false;
@@ -673,7 +673,7 @@ namespace Assets.Scripts
 
 	        while (timer <= waitTime)
 	        {
-	            GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
+	            GuardUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
 	            timer += Time.deltaTime;
 	            yield return null;
 	        }
@@ -691,7 +691,7 @@ namespace Assets.Scripts
 
 	        while (timer <= waitTime)
 	        {
-                if (GuardUtil.CanSeePlayer(_fov) || GuardUtil.CanHearPlayer(_hearing))
+                if (GuardUtil.CanSeePlayer(_sight) || GuardUtil.CanHearPlayer(_hearing))
 	                GuardUtil.state = GuardUtil.State.Chase;
 
 	            timer += Time.deltaTime;
@@ -705,7 +705,7 @@ namespace Assets.Scripts
 
 	        while (timer <= waitTime)
 	        {
-	            GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
+	            GuardUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
 
                 // Todo Talk To Guard
 

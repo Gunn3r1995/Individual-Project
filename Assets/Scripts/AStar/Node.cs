@@ -22,7 +22,7 @@ namespace Assets.Scripts.AStar
         /// Node Constructor
         /// </summary>
         /// <param name="walkable"></param>
-        /// <param name="worldPosition"></param>
+        /// <param name="worldPosition"></paramt>
         /// <param name="gridX"></param>
         /// <param name="gridY"></param>
         public Node(bool walkable, Vector3 worldPosition, int gridX, int gridY)

@@ -14,7 +14,7 @@ namespace Assets.Scripts
         [HideInInspector]
         public GuardUtil GuardUtil;
 
-        private FieldOfView _fov;
+        private Sight _sight;
         public GameObject Player;
         public bool AutoTargetPlayer;
 
@@ -70,7 +70,7 @@ namespace Assets.Scripts
 		    GuardUtil = GetComponent<GuardUtil>();
             _character = GetComponent<ThirdPersonCharacter>();
             _animator = GetComponent<Animator>();
-		    _fov = GetComponent<FieldOfView>();
+		    _sight = GetComponent<Sight>();
 		    _grid = FindObjectOfType<AStar.Grid>();
 		    _gridAgent = GetComponent<GridAgent>();
         }
@@ -98,7 +98,7 @@ namespace Assets.Scripts
             switch (GuardUtil.state)
             {
                 case GuardUtil.State.Patrol:
-                    GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
+                    GuardUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
                     if (!_patrolling)
                         StartCoroutine(Patrol());
                     break;
@@ -189,7 +189,7 @@ namespace Assets.Scripts
                 }
 
                 // If can se player while alerted go straight to chase
-                if (GuardUtil.CanSeePlayer(_fov))
+                if (GuardUtil.CanSeePlayer(_sight))
                 {
                     GuardUtil.state = GuardUtil.State.Chase;
                     break;
@@ -223,7 +223,7 @@ namespace Assets.Scripts
 				timer += Time.deltaTime;
 
 				// If can se player while investigating go straight to chase
-				if (GuardUtil.CanSeePlayer(_fov))
+				if (GuardUtil.CanSeePlayer(_sight))
                     GuardUtil.state = GuardUtil.State.Chase;
 
                 if (_gridAgent.HasPathFinished)
@@ -272,7 +272,7 @@ namespace Assets.Scripts
             {
                 timer += Time.deltaTime;
 
-                if (GuardUtil.CanSeePlayer(_fov))
+                if (GuardUtil.CanSeePlayer(_sight))
                 {
                     laspPos = Player.transform.position;
                     _gridAgent.StraightToDestination(Player.transform.position);
@@ -309,7 +309,7 @@ namespace Assets.Scripts
 
             while (timer <= waitTime)
             {
-                GuardUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
+                GuardUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
                 timer += Time.deltaTime;
                 yield return null;
             }
@@ -326,7 +326,7 @@ namespace Assets.Scripts
             var timer = 0f;
 
             while(timer <= waitTime) {
-				if (GuardUtil.CanSeePlayer(_fov))
+				if (GuardUtil.CanSeePlayer(_sight))
                     GuardUtil.state = GuardUtil.State.Chase;
 
 				timer += Time.deltaTime;

@@ -12,7 +12,7 @@ namespace Assets.Scripts.AStar
     {
         public bool DisplayGridGizmos;
         public LayerMask UnwalkableMask;
-        public Vector2 GridWorldSize;
+        public Vector2 GridSize;
         public float NodeRadius = 0.5f;
 
         public int MaxSize
@@ -29,8 +29,8 @@ namespace Assets.Scripts.AStar
         {
             // World size parameters
             _nodeDiameter = NodeRadius * 2;
-            _gridSizeX = Mathf.RoundToInt(GridWorldSize.x / _nodeDiameter);
-            _gridSizeY = Mathf.RoundToInt(GridWorldSize.y / _nodeDiameter);
+            _gridSizeX = Mathf.RoundToInt(GridSize.x / _nodeDiameter);
+            _gridSizeY = Mathf.RoundToInt(GridSize.y / _nodeDiameter);
 
             CreateGrid();
         }
@@ -42,10 +42,11 @@ namespace Assets.Scripts.AStar
         {
             // New Array of nodes
             _grid = new Node[_gridSizeX, _gridSizeY];
+            
             // Calculate the bottom left of the grid
             var bottomLeft = transform.position 
-                - Vector3.right * GridWorldSize.x / 2 
-                - Vector3.forward * GridWorldSize.y / 2;
+                - Vector3.right * GridSize.x / 2 
+                - Vector3.forward * GridSize.y / 2;
 
             // loop each X,Y grid value
             for (var x = 0; x < _gridSizeX; x++) {
@@ -112,8 +113,8 @@ namespace Assets.Scripts.AStar
         /// <returns>Node</returns>
         public Node GetNodeFromWorldPoint(Vector3 worldPosistion){
             // Reverse the world size calcualtions
-            var x = Mathf.RoundToInt((_gridSizeX - 1) * Mathf.Clamp01((worldPosistion.x + GridWorldSize.x / 2) / GridWorldSize.x));
-            var y = Mathf.RoundToInt((_gridSizeY - 1) * Mathf.Clamp01((worldPosistion.z + GridWorldSize.y / 2) / GridWorldSize.y));
+            var x = Mathf.RoundToInt((_gridSizeX - 1) * Mathf.Clamp01((worldPosistion.x + GridSize.x / 2) / GridSize.x));
+            var y = Mathf.RoundToInt((_gridSizeY - 1) * Mathf.Clamp01((worldPosistion.z + GridSize.y / 2) / GridSize.y));
 
             return _grid[x, y];
         }
@@ -122,7 +123,8 @@ namespace Assets.Scripts.AStar
         private void OnDrawGizmos()
         {
             // Draw wireframe of the grid size for easy editing
-            Gizmos.DrawWireCube(transform.position, new Vector3(GridWorldSize.x,1, GridWorldSize.y));
+            Gizmos.DrawWireCube(transform.position, new Vector3(GridSize.x,1, GridSize.y));
+
             // Draws all the nodes in the grid
             HandleDrawGridNodes();
         }

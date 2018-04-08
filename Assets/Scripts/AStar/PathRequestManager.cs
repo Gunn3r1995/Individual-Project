@@ -13,7 +13,6 @@ namespace Assets.Scripts.AStar
         private static PathRequestManager _instance;
         private Pathfinding _pathfinding;
 
-
         private void Awake()
         {
             _instance = this;

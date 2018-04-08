@@ -12,14 +12,14 @@ namespace Assets.Scripts
         /// <summary>
         /// When player is in sight for longer than "timeToSpotPlayer" variable change state to evade.
         /// </summary>
-        /// <param name="fov"></param>
+        /// <param name="sight"></param>
         /// <param name="playerVisibleTimer"></param>
         /// <param name="timeToSpotPlayer"></param>
-        public void SpotPlayer(FieldOfView fov, ref float playerVisibleTimer, float timeToSpotPlayer)
+        public void SpotPlayer(Sight sight, ref float playerVisibleTimer, float timeToSpotPlayer)
         {
-            if (fov == null) return;
+            if (sight == null) return;
 
-            if (fov.VisibleTargets.Count > 0) playerVisibleTimer += Time.deltaTime;
+            if (sight.VisibleTargets.Count > 0) playerVisibleTimer += Time.deltaTime;
             else playerVisibleTimer -= Time.deltaTime;
 
             playerVisibleTimer = Mathf.Clamp(playerVisibleTimer, 0, timeToSpotPlayer);
@@ -47,15 +47,15 @@ namespace Assets.Scripts
         /// Return true if can see the player.
         /// </summary>
         /// <returns><c>true</c>, if see player was caned, <c>false</c> otherwise.</returns>
-        /// <param name="fov">Fov.</param>
-        public static bool CanSeePlayer(FieldOfView fov)
+        /// <param name="sight">Fov.</param>
+        public static bool CanSeePlayer(Sight sight)
         {
-            return fov.VisibleTargets.Count > 0;
+            return sight.VisibleTargets.Count > 0;
         }
 
-        public static bool CanSeeGuard(FieldOfView fov)
+        public static bool CanSeeGuard(Sight sight)
         {
-            return fov.VisibleGuards.Count > 0;
+            return sight.VisibleGuards.Count > 0;
         }
 
         /// <summary>

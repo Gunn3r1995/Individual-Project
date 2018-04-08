@@ -16,7 +16,7 @@ namespace Assets.Scripts
 
         private AudioSource _audioSource;
 
-        private FieldOfView _fov;
+        private Sight _sight;
         public GameObject Player;
         public bool AutoTargetPlayer;
 
@@ -56,7 +56,7 @@ namespace Assets.Scripts
         {
             if (GetComponent<CivilianUtil>() == null) gameObject.AddComponent<CivilianUtil>();
             CivilianUtil = GetComponent<CivilianUtil>();
-            _fov = GetComponent<FieldOfView>();
+            _sight = GetComponent<Sight>();
             _grid = FindObjectOfType<AStar.Grid>();
             _gridAgent = GetComponent<GridAgent>();
             _audioSource = GetComponent<AudioSource>();
@@ -85,7 +85,7 @@ namespace Assets.Scripts
             switch (CivilianUtil.state)
             {
                 case CivilianUtil.State.Patrol:
-                    CivilianUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
+                    CivilianUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
                     if (!_patrolling)
                         StartCoroutine(Patrol());
                     break;
@@ -164,7 +164,7 @@ namespace Assets.Scripts
                 // Run Away
                 if (_gridAgent.HasPathFinished)
                 {
-                    if (CivilianUtil.CanSeePlayer(_fov))
+                    if (CivilianUtil.CanSeePlayer(_sight))
                     {
                         // Generate waypoint
                         targetPosition = CivilianUtil.CreateRandomWalkablePosition(transform.position, EvadeRadius, _grid);
@@ -190,10 +190,10 @@ namespace Assets.Scripts
                 }
 
                 // Tell Any Guards
-                if (CivilianUtil.CanSeeGuard(_fov))
+                if (CivilianUtil.CanSeeGuard(_sight))
                 {
                     var alreadySpoken = false;
-                    foreach (var guard in _fov.VisibleGuards)
+                    foreach (var guard in _sight.VisibleGuards)
                     {
                         if (guard.GetComponent<GuardUtil>().state == GuardUtil.State.Investigate) continue;
 
@@ -264,7 +264,7 @@ namespace Assets.Scripts
 
             while (timer <= waitTime)
             {
-                CivilianUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
+                CivilianUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
                 timer += Time.deltaTime;
                 yield return null;
             }

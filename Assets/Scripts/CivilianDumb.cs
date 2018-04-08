@@ -13,7 +13,7 @@ namespace Assets.Scripts
         [HideInInspector]
         public CivilianUtil CivilianUtil;
 
-        private FieldOfView _fov;
+        private Sight _sight;
         public GameObject Player;
         public bool AutoTargetPlayer;
 
@@ -55,7 +55,7 @@ namespace Assets.Scripts
             CivilianUtil = GetComponent<CivilianUtil>();
             _character = GetComponent<ThirdPersonCharacter>();
             _animator = GetComponent<Animator>();
-            _fov = GetComponent<FieldOfView>();
+            _sight = GetComponent<Sight>();
             _grid = FindObjectOfType<AStar.Grid>();
             _gridAgent = GetComponent<GridAgent>();
         }
@@ -82,7 +82,7 @@ namespace Assets.Scripts
             switch (CivilianUtil.state)
             {
                 case CivilianUtil.State.Patrol:
-                    CivilianUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
+                    CivilianUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
                     if (!_patrolling)
                         StartCoroutine(Patrol());
                     break;
@@ -148,7 +148,7 @@ namespace Assets.Scripts
                 // Run Away
                 if (_gridAgent.HasPathFinished)
                 {
-                    if (CivilianUtil.CanSeePlayer(_fov))
+                    if (CivilianUtil.CanSeePlayer(_sight))
                     {
                         // Generate waypoint
                         targetPosition = CivilianUtil.CreateRandomWalkablePosition(transform.position, EvadeRadius, _grid);
@@ -183,7 +183,7 @@ namespace Assets.Scripts
 
             while (timer <= waitTime)
             {
-                CivilianUtil.SpotPlayer(_fov, ref _playerVisibleTimer, TimeToSpotPlayer);
+                CivilianUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
                 timer += Time.deltaTime;
                 yield return null;
             }
