@@ -674,6 +674,7 @@ namespace Assets.Scripts
 	        while (timer <= waitTime)
 	        {
 	            GuardUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
+                GuardUtil.ListenForPlayer(_hearing, ref _playerHearedTimer, TimeToHearPlayer);
 	            timer += Time.deltaTime;
 	            yield return null;
 	        }
