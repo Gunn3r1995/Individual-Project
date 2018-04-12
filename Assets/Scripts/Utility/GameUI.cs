@@ -98,6 +98,8 @@ namespace Assets.Scripts.Utility
             switch (largestVal)
             {
                 case (int)GuardUtil.State.Patrol:
+                case (int)GuardUtil.State.Standing:
+                default:
                     DisableAllStateUi();
                     break;
                 case (int)GuardUtil.State.Alert:
@@ -108,12 +110,6 @@ namespace Assets.Scripts.Utility
                     break;
                 case (int)GuardUtil.State.Chase:
                     if (StateChase != null) StateChase.SetActive(true);
-                    break;
-                case (int)GuardUtil.State.Standing:
-                    DisableAllStateUi();
-                    break;
-                default:
-                    DisableAllStateUi();
                     break;
             }
         }
