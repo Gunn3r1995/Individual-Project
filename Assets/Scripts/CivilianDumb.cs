@@ -68,7 +68,7 @@ namespace Assets.Scripts
             if (RandomWaypoints)
                 _waypointIndex = Random.Range(0, Waypoints.Length);
 
-            CivilianUtil.state = CivilianUtil.State.Patrol;
+            CivilianUtil.state = CivilianUtil.State.Wander;
         }
 
         [UsedImplicitly]
@@ -81,7 +81,7 @@ namespace Assets.Scripts
         {
             switch (CivilianUtil.state)
             {
-                case CivilianUtil.State.Patrol:
+                case CivilianUtil.State.Wander:
                     CivilianUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
                     if (!_patrolling)
                         StartCoroutine(Patrol());
@@ -97,7 +97,7 @@ namespace Assets.Scripts
         {
             _patrolling = true;
 
-            while (CivilianUtil.state == CivilianUtil.State.Patrol)
+            while (CivilianUtil.state == CivilianUtil.State.Wander)
             {
                 // Walk straight to the next waypoint
                 transform.position = Vector3.MoveTowards(transform.position, Waypoints[_waypointIndex].transform.position, PatrolSpeed * Time.deltaTime);
@@ -159,7 +159,7 @@ namespace Assets.Scripts
                     }
                     else
                     {
-                        CivilianUtil.state = CivilianUtil.State.Patrol;
+                        CivilianUtil.state = CivilianUtil.State.Wander;
                         yield break;
                     }
                 }

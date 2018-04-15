@@ -6,7 +6,7 @@ using Random = UnityEngine.Random;
 namespace Assets.Scripts
 {
     public class CivilianUtil : MonoBehaviour {
-        public enum State { Patrol, Evade }
+        public enum State { Wander, Evade }
         public State state;
 
         /// <summary>

@@ -98,7 +98,7 @@ namespace Assets.Scripts.Utility
             switch (largestVal)
             {
                 case (int)GuardUtil.State.Patrol:
-                case (int)GuardUtil.State.Standing:
+                case (int)GuardUtil.State.Stand:
                 default:
                     DisableAllStateUi();
                     break;

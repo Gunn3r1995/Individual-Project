@@ -8,7 +8,7 @@ namespace Assets.Scripts
     public class GuardUtil : MonoBehaviour {
         public static event Action OnGuardCaughtPlayer;
 
-        public enum State { Standing, Patrol, Alert, Investigate, Chase }
+        public enum State { Stand, Patrol, Alert, Investigate, Chase }
         public State state;
 
         /// <summary>
