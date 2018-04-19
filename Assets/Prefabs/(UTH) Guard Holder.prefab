@@ -2757,7 +2757,6 @@ MonoBehaviour:
   GuardUtil: {fileID: 0}
   Player: {fileID: 0}
   AutoTargetPlayer: 0
-  TimeToSpotPlayer: 0.5
   Waypoints:
   - {fileID: 1036691546546828}
   - {fileID: 1699255318385684}
@@ -2766,11 +2765,6 @@ MonoBehaviour:
   RandomWaypoints: 0
   PatrolSpeed: 0.5
   PatrolWaitTime: 4
-  AlertReactionTime: 0.75
-  InvestigateSpeed: 0.75
-  InvestigateTime: 10
-  InvestigateSpotTime: 3
-  WanderRadius: 5
   ChaseSpeed: 1.25
   ChaseTime: 10
 --- !u!114 &114588955296880516
@@ -2796,7 +2790,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ViewRadius: 20
-  ViewAngle: 120
+  ViewAngle: 80
   PlayerMask:
     serializedVersion: 2
     m_Bits: 256
@@ -2805,7 +2799,7 @@ MonoBehaviour:
     m_Bits: 0
   ObstacleMask:
     serializedVersion: 2
-    m_Bits: 1536
+    m_Bits: 1024
   LookDelay: 0.2
   VisibleTargets: []
   VisibleGuards: []

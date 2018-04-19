@@ -1,9 +1,8 @@
-﻿﻿using System.Collections;
- using System.Collections.Generic;
- using System.Linq;
+﻿using System.Collections;
+using System.Linq;
 using Assets.Scripts.AStar;
- using JetBrains.Annotations;
- using UnityEngine;
+using JetBrains.Annotations;
+using UnityEngine;
 using UnityStandardAssets.Characters.ThirdPerson;
 
 namespace Assets.Scripts
@@ -24,11 +23,6 @@ namespace Assets.Scripts
         private AStar.Grid _grid;
 		private GridAgent _gridAgent;
 
-		#region Sight
-		public float TimeToSpotPlayer = 0.5f;
-		private float _playerVisibleTimer;
-        #endregion
-
         #region Patrol
         public GameObject[] Waypoints;
 		public bool RandomWaypoints;
@@ -38,22 +32,6 @@ namespace Assets.Scripts
 		private int _waypointIndex;
 		private bool _patrolling;
         #endregion
-
-        #region Alert
-		public float AlertReactionTime = 2.0f;
-
-		private Vector3 _alertSpot;
-		private bool _alerted;
-		#endregion
-
-		#region Investigate
-		public float InvestigateSpeed = 1.0f;
-		public float InvestigateTime = 60.0f;
-        public float InvestigateSpotTime = 5.0f;
-		public float WanderRadius = 5.0f;
-
-		private bool _investigating;
-		#endregion
 
 		#region Chase
 		public float ChaseSpeed = 2.0f;
@@ -98,21 +76,15 @@ namespace Assets.Scripts
             switch (GuardUtil.state)
             {
                 case GuardUtil.State.Patrol:
-                    GuardUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
                     if (!_patrolling)
                         StartCoroutine(Patrol());
-                    break;
-                case GuardUtil.State.Alert:
-                    if (!_alerted)
-                        StartCoroutine(Alert());
-                    break;
-                case GuardUtil.State.Investigate:
-                    if (!_investigating)
-                        StartCoroutine(Investigate());
                     break;
                 case GuardUtil.State.Chase:
                     if (!_chasing)
                         StartCoroutine(Chase());
+                    break;
+                default:
+                    GuardUtil.state = GuardUtil.State.Patrol;
                     break;
             }
         }
@@ -140,121 +112,17 @@ namespace Assets.Scripts
 		                if (_waypointIndex >= Waypoints.Length)
 		                    _waypointIndex = 0;
 		            }
-
-                    // Stop walking animation
-                    _animator.SetFloat("Forward", 0);
-
-                    // Stop the guard for PatrolWaitTime amount of time
-		            yield return StartCoroutine(LookForPlayer(PatrolWaitTime));
                 }
+
+                if(GuardUtil.CanSeePlayer(_sight)) {
+                    GuardUtil.state = GuardUtil.State.Chase;
+                    break;
+                }
+
 		        yield return null;
 		    }
 
             _patrolling = false;
-        }
-
-        private IEnumerator Alert(){
-            print("Alerted");
-            _alerted = true;
-
-            // Set alert spot to players location
-            _alertSpot = Player.transform.position;
-
-            // Set the destination to the alert spot
-            transform.LookAt(_alertSpot);
-            _gridAgent.StraightToDestination(_alertSpot);
-
-            // Stop moving and wait for 'AlertReactionTime' amount
-            _gridAgent.StopMoving();
-            yield return new WaitForSeconds(AlertReactionTime);
-
-            var timer = 0f;
-            while (GuardUtil.state == GuardUtil.State.Alert) {
-			    print("Alerted");
-                timer += Time.deltaTime;
-				_gridAgent.Speed = InvestigateSpeed;
-
-                if (Vector3.Distance(transform.position, _alertSpot) <= 0.2f)
-                {
-                    // On Alert Destination Reached
-
-					// stop the agent
-					_gridAgent.StopMoving();
-
-                    // Wait for 'InvestigateSpotTime' amount while looking for the player
-					yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
-                    GuardUtil.state = GuardUtil.State.Investigate;
-
-					break;
-                }
-
-                // If can se player while alerted go straight to chase
-                if (GuardUtil.CanSeePlayer(_sight))
-                {
-                    GuardUtil.state = GuardUtil.State.Chase;
-                    break;
-                }
-
-                if (timer >= 10f)
-                {
-                    GuardUtil.state = GuardUtil.State.Investigate;
-                }
-
-                yield return null;
-            }
-			_alerted = false;
-        }
-
-        private IEnumerator Investigate(){
-            print("Investigating");
-            _investigating = true;
-			var timer = 0.0f;
-            var lastPos = new Vector3(0, 0, 0);
-
-            // Generate first waypoint and save the position
-            var targetPosition = GuardUtil.CreateRandomWalkablePosition(_alertSpot, WanderRadius, ref lastPos, _grid);
-
-            // Go to first waypoint
-            _gridAgent.Speed = InvestigateSpeed;
-            _gridAgent.RequestSetDestination(transform.position, targetPosition, false);
-
-            while(GuardUtil.state == GuardUtil.State.Investigate) {
-                // Add to time
-				timer += Time.deltaTime;
-
-				// If can se player while investigating go straight to chase
-				if (GuardUtil.CanSeePlayer(_sight))
-                    GuardUtil.state = GuardUtil.State.Chase;
-
-                if (_gridAgent.HasPathFinished)
-                {
-                    // Guard reached waypoint
-                    // Create a new waypoint parsing in the last waypoint; by reference so that it keeps the 'lastPos' updated
-                    targetPosition = GuardUtil.CreateRandomWalkablePosition(_alertSpot, WanderRadius, ref lastPos);
-
-                    // Set the destination and stop moving work around
-                    _gridAgent.RequestSetDestination(transform.position, targetPosition, false);
-                    _gridAgent.StopMoving();
-
-                    // Wait at waypoint for 'InvestigateSpotTime' amount
-                    yield return StartCoroutine(SearchForPlayer(InvestigateSpotTime));
-                    // Add the 'InvestigateSpotTime' amount to the timer
-                    timer += InvestigateSpotTime;
-
-                    // Start walking to next waypoint
-                    _gridAgent.Speed = InvestigateSpeed;
-                }
-
-                if (timer >= InvestigateTime){
-                    // If investiage time reached go back to patrol
-                    GuardUtil.state = GuardUtil.State.Patrol;
-                    break;
-                }
-
-                yield return null;
-            }
-
-            _investigating = false;
         }
 
         private IEnumerator Chase()
@@ -264,19 +132,14 @@ namespace Assets.Scripts
 
             var timer = 0f;
 
-            var laspPos = Player.transform.position;
-			transform.LookAt(laspPos);
+            transform.LookAt(Player.transform.position);
             _gridAgent.Speed = ChaseSpeed;
 
             while (GuardUtil.state == GuardUtil.State.Chase)
             {
                 timer += Time.deltaTime;
 
-                if (GuardUtil.CanSeePlayer(_sight))
-                {
-                    laspPos = Player.transform.position;
-                    _gridAgent.StraightToDestination(Player.transform.position);
-                }
+                _gridAgent.StraightToDestination(Player.transform.position);
 
                 if (Vector3.Distance(transform.position, Player.transform.position) <= 1.0f)
                 {
@@ -286,52 +149,13 @@ namespace Assets.Scripts
 
                 if(timer >= ChaseTime)
                 {
-                    _alertSpot = laspPos;
-                    GuardUtil.state = GuardUtil.State.Investigate;
+                    GuardUtil.state = GuardUtil.State.Patrol;
                     break;
                 }
 
                 yield return null;
             }
             _chasing = false;
-        }
-        
-        /// <summary>
-        /// LookForPlayer:
-        /// LookForPlayer is a method which adds the functionality of new WaitForSeconds, but with improved SpotPlayer();
-        /// method call to ensure that the guard can see the player while the guard is waiting.
-        /// </summary>
-        /// <param name="waitTime"></param>
-        /// <returns></returns>
-        private IEnumerator LookForPlayer(float waitTime)
-        {
-            var timer = 0f;
-
-            while (timer <= waitTime)
-            {
-                GuardUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
-                timer += Time.deltaTime;
-                yield return null;
-            }
-        }
-
-        /// <summary>
-        /// Adds functionaility for new WaitForSeconds, but with improved can see player checks to change state
-        /// to chase if player is detected.
-        /// </summary>
-        /// <param name="waitTime"></param>
-        /// <returns></returns>
-        private IEnumerator SearchForPlayer(float waitTime)
-        {
-            var timer = 0f;
-
-            while(timer <= waitTime) {
-				if (GuardUtil.CanSeePlayer(_sight))
-                    GuardUtil.state = GuardUtil.State.Chase;
-
-				timer += Time.deltaTime;
-                yield return null;
-            }
         }
 
 		public void OnDrawGizmos()

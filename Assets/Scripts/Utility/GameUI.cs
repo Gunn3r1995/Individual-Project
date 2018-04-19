@@ -20,6 +20,8 @@ namespace Assets.Scripts.Utility
         [UsedImplicitly]
         private void Start()
         {
+            Time.timeScale = 1;
+
             // Action handles for Ui
             FindObjectOfType<PlayerController>().OnReachedEndOfLevel += ShowGameWinUi;
             GuardUtil.OnGuardCaughtPlayer += ShowGameLoseUi;
@@ -132,6 +134,7 @@ namespace Assets.Scripts.Utility
             if (PauseMenu == null)
                 return;
 
+            Time.timeScale = 0;
             _gameIsPaused = true;
             PauseMenu.SetActive(true);
 
@@ -146,6 +149,7 @@ namespace Assets.Scripts.Utility
             if (PauseMenu == null)
                 return;
 
+            Time.timeScale = 1;
             _gameIsPaused = false;
             PauseMenu.SetActive(false);
 
