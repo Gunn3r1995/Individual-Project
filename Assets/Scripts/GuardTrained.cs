@@ -150,9 +150,6 @@ namespace Assets.Scripts
             switch (GuardUtil.state)
             {
                 case GuardUtil.State.Patrol:
-                    GuardUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
-                    GuardUtil.ListenForPlayer(_hearing, ref _playerHearedTimer, TimeToHearPlayer);
-
                     if (!_patrolling)
                         StartCoroutine(Patrol());
                     break;
@@ -192,6 +189,9 @@ namespace Assets.Scripts
 
             while (GuardUtil.state == GuardUtil.State.Patrol)
             {
+                GuardUtil.SpotPlayer(_sight, ref _playerVisibleTimer, TimeToSpotPlayer);
+                GuardUtil.ListenForPlayer(_hearing, ref _playerHearedTimer, TimeToHearPlayer);
+
                 // Ensure has reached current waypoints destination
                 if (_gridAgent.HasPathFinished)
                 {
